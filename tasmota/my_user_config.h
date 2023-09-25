@@ -50,7 +50,7 @@
 #define PROJECT                "CTS_tasmota_SML"         // PROJECT is used as the default topic delimiter
 
 // If not selected the default will be SONOFF_BASIC
-//#define MODULE                 USER_MODULE     // [Module] Select default module from tasmota_template.h
+#define MODULE                 USER_MODULE     // [Module] Select default module from tasmota_template.h
 #ifdef ESP8266
 #define FALLBACK_MODULE        SONOFF_BASIC      // [Module2] Select default module on fast reboot where USER_MODULE is user template
 #define USER_TEMPLATE "{\"Name\":\"Christians Technikshop WiFi IR Smart Meter Interface\",\"GPIO\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"FLAG\":0,\"BASE\":18}"  // [Template] Set JSON template
