@@ -1,6 +1,6 @@
 # Christians Technikshop WiFi IR Smart Meter Interface - Angepasste Tasmota Firmware
 
-![Christians Technikshop Logo](https://www.christians-shop.de/wp-content/uploads/2019/04/Christians-Technikshop-Logo.png)
+![Christians Technikshop](https://www.christians-shop.de/wp-content/uploads/2019/04/Christians-Technikshop-Logo.png)
 
 Dieses Repository enthält eine speziell angepasste Version der Tasmota Firmware für das Produkt "Christians Technikshop WiFi IR Smart Meter Interface". Diese Firmware-Version integriert das SML-Protokoll, um die nahtlose Kommunikation mit Ihrem Smart Meter zu ermöglichen. Mit dieser Firmware können Sie Ihr Smart Meter über WLAN steuern und überwachen.
 
