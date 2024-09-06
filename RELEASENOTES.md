@@ -40,7 +40,7 @@ This release will be supported from ESP32/Arduino library Core version **3.0.4**
 
 Support of ESP8266 Core versions before 2.7.7 and ESP32 Core versions before 3.0.4 have been removed.
 
-### Known issues with v14.1.0
+### Known issues with v14.2.0
 
 Due to the change from ESP32 Arduino Core2/IDF4 to Arduino Core3/IDF5 not all functionality has been restored. The following features are known not to work on ESP32:
 - Wifi Range Extender [#21200](https://github.com/arendst/Tasmota/issues/21200)
@@ -119,7 +119,8 @@ The latter links can be used for OTA upgrades too like ``OtaUrl https://ota.tasm
 
 [Complete list](BUILDS.md) of available feature and sensors.
 
-## Changelog v14.2.0.3
+
+## Changelog v14.2.0 Rita
 ### Added
 - Command ``SetOption69 1`` to enable Serial Bridge inverted Receive [#22000](https://github.com/arendst/Tasmota/issues/22000)
 - Energy command ``PowerSet 60,230`` to calibrate both Current and Power with known resistive load of 60W at 230V using calibrated Voltage
