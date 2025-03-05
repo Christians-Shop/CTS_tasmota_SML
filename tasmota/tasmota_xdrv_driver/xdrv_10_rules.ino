@@ -1687,14 +1687,19 @@ float evaluateExpression(const char * expression, unsigned int len) {
     while (index < operators_size) {
       if (priority == pgm_read_byte(kExpressionOperatorsPriorities + operators[index])) {  // Need to calculate the operator first
         // Get current object value and remove the next object with current operator
+
+//        AddLog(LOG_LEVEL_DEBUG, PSTR("DBG: index %d, v1 '%4_f', v2 '%4_f', op %d"), index, &object_values[index], &object_values[index + 1], operators[index]);
+
         va = calculateTwoValues(object_values[index], object_values[index + 1], operators[index]);
         uint32_t i = index;
         while (i <= operators_size) {
-          operators[i++] = operators[i];           // operators.remove(index)
+//          operators[i++] = operators[i];           // operators.remove(index) - Fails on ESP32 (#22636)
+          operators[i] = operators[i +1];           // operators.remove(index)
+          i++;
           object_values[i] = object_values[i +1];  // object_values.remove(index + 1)
         }
         operators_size--;
-        object_values[index] =  va;                // Replace the current value with the result
+        object_values[index] = va;                 // Replace the current value with the result
 
 //        AddLog(LOG_LEVEL_DEBUG, PSTR("DBG: Intermediate '%4_f'"), &object_values[index]);
 
@@ -2464,21 +2469,15 @@ void CmndScale(void)
         float fromHigh = CharToFloat(ArgV(argument, 3));
         float toLow = CharToFloat(ArgV(argument, 4));
         float toHigh = CharToFloat(ArgV(argument, 5));
-        float value = map_double(valueIN, fromLow, fromHigh, toLow, toHigh);
+        float value = map_float(valueIN, fromLow, fromHigh, toLow, toHigh);
         dtostrfd(value, Settings->flag2.calc_resolution, rules_vars[XdrvMailbox.index -1]);
         bitSet(Rules.vars_event, XdrvMailbox.index -1);
       } else {
-        ResponseCmndIdxError();
-        return;
+        return;  // Command Error
       }
     }
     ResponseCmndIdxChar(rules_vars[XdrvMailbox.index -1]);
   }
-}
-
-float map_double(float x, float in_min, float in_max, float out_min, float out_max)
-{
-  return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min;
 }
 
 /*********************************************************************************************\

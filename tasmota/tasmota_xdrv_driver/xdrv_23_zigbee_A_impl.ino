@@ -117,7 +117,7 @@ void ZigbeeInit(void)
 
 #ifdef USE_ZIGBEE_EZSP
     // Check the I2C EEprom
-    if (TasmotaGlobal.i2c_enabled) {
+    if (TasmotaGlobal.i2c_enabled[0]) {
       Wire.beginTransmission(USE_ZIGBEE_ZBBRIDGE_EEPROM);
       uint8_t error = Wire.endTransmission();
       if (0 == error) {
@@ -1393,8 +1393,6 @@ void CmndZbLoad(void) {
   }
   if (ret) {
     ResponseCmndDone();
-  } else {
-    ResponseCmndError();
   }
 }
 
@@ -1409,8 +1407,6 @@ void CmndZbUnload(void) {
   bool ret = ZbUnload(XdrvMailbox.data);
   if (ret) {
     ResponseCmndDone();
-  } else {
-    ResponseCmndError();
   }
 }
 
@@ -1504,8 +1500,6 @@ void CmndZbenroll(void) {
     Z_SendCIEZoneEnrollResponse(device.shortaddr, 0, 500, enrollEndpoint, 1);
     
     ResponseCmndDone();
-  } else {
-    ResponseCmndError();
   }
 }
 
@@ -1522,8 +1516,6 @@ void CmndZbCIE(void) {
     Z_WriteCIEAddress(device.shortaddr, 0, 500, enrollEndpoint, 0);
     
     ResponseCmndDone();
-  } else {
-    ResponseCmndError();
   }
 }
 
@@ -1554,8 +1546,6 @@ void CmndZbEmulation(void) {
     }
     
     ResponseCmndDone();
-  } else {
-    ResponseCmndError();
   }
 }
 

@@ -28,7 +28,7 @@
  * Use online command StateText to translate ON, OFF, HOLD and TOGGLE.
  * Use online command Prefix to translate cmnd, stat and tele.
  *
- * Updated until v9.4.0.1 - Last update 27.07.2024
+ * Updated until v9.4.0.1 - Last update 31.01.2025
 \*********************************************************************/
 
 #define LANGUAGE_MODULE_NAME         // Enable to display "Module Generic" (ie Spanish), Disable to display "Generic Module" (ie English)
@@ -56,6 +56,7 @@
 #define D_AIR_QUALITY          "Qualità dell'aria"
 #define D_AP                   "AP"                   // Access Point
 #define D_AS                   "come"
+#define D_AT                   "in"
 #define D_AUTO                 "AUTO"
 #define D_BATTERY              "Batteria"
 #define D_BATT                 "Batt"                 // Short for Battery
@@ -87,9 +88,6 @@
 #define D_DEBUG                "Debug"
 #define D_DEWPOINT             "Punto rugiada" //
 #define D_DISABLED             "Disabilitato/a"
-#define D_MOVING_DISTANCE      "Distanza in movimento"
-#define D_STATIC_DISTANCE      "Distanza statica"
-#define D_DETECT_DISTANCE      "Rileva distanza"
 #define D_DISTANCE             "Distanza"
 #define D_DNS_SERVER           "Server DNS"
 #define D_DO                   "Ossigeno dissolto"
@@ -218,6 +216,7 @@
 #define D_WEB_SERVER           "Server web"
 #define D_SOC                  "Stato di carica"
 #define D_SOH                  "State di salute"
+#define D_WATER_DEPTH          "Profondità dell'acqua"
 
 // tasmota.ino
 #define D_WARNING_MINIMAL_VERSION  "ATTENZIONE Questa versione non supporta il salvataggio delle impostazioni"
@@ -380,7 +379,7 @@
 #define D_MQTT_TOPIC            "Topic MQTT"
 #define D_MQTT_GROUP_TOPIC      "Gruppo topic MQTT"
 #define D_MQTT_FULL_TOPIC       "Full topic MQTT"
-#define D_MQTT_NO_RETAIN        "MQTT No Retain"
+#define D_MQTT_NO_RETAIN        "MQTT Nessuna conservazione"
 #define D_MDNS_DISCOVERY        "Ricerca mDNS"
 #define D_MDNS_ADVERTISE        "Notifica mDNS"
 #define D_ESP_CHIP_ID           "ID chip ESP"
@@ -388,10 +387,10 @@
 #define D_FLASH_CHIP_SIZE       "Dimensione flash"
 #define D_FREE_PROGRAM_SPACE    "Memoria libera programma"
 
-#define D_UPGRADE_BY_WEBSERVER    "Aggiornamento via server web"
+#define D_UPGRADE_BY_WEBSERVER    "Aggiorna via server web"
 #define D_OTA_URL                 "URL OTA"
 #define D_START_UPGRADE           "Esegui aggiornamento"
-#define D_UPGRADE_BY_FILE_UPLOAD  "Aggiornamento tramite file locale"
+#define D_UPGRADE_BY_FILE_UPLOAD  "Aggiorna tramite file locale"
 #define D_UPLOAD_FACTORY          "Passaggio a partizione avvio sicuro"
 #define D_UPLOAD_STARTED          "Caricamento..."
 #define D_UPGRADE_STARTED         "Aggiornamento..."
@@ -572,17 +571,25 @@
 #define D_THERMOSTAT_PI_HYBRID        "PI (ibdrida)"
 #define D_THERMOSTAT_AUTOTUNE_HYBRID  "Regolazione automatica (ibrida)"
 
+// xdrv_79_esp32_ble.ino
+#define D_CONFIGURE_BLE               "BLE"
+#define D_BLE_PARAMETERS              "Impostazioni Bluetooth"
+#define D_BLE_ENABLE                  "Abilita Bluetooth"
+#define D_BLE_ACTIVESCAN              "Abilita scansione attiva (*)"
+#define D_BLE_DEVICES                 "Scansione dispositivi"
+#define D_BLE_REMARK                  "gli elementi segnati con (*) non sono memorizzati in config"
+
 // xsns_05_ds18b20.ino
-#define D_SENSOR_BUSY       "Sensore occupato"
-#define D_SENSOR_CRC_ERROR  "Errore CRC sensore"
-#define D_SENSORS_FOUND     "Sensori trovati"
+#define D_SENSOR_BUSY                 "Sensore occupato"
+#define D_SENSOR_CRC_ERROR            "Errore CRC sensore"
+#define D_SENSORS_FOUND               "Sensori trovati"
 
 // xsns_06_dht.ino
-#define D_TIMEOUT_WAITING_FOR  "Timeout attesa per"
-#define D_START_SIGNAL_LOW     "inizio segnale basso"
-#define D_START_SIGNAL_HIGH    "inizio segnale alto"
-#define D_PULSE                "impulso"
-#define D_CHECKSUM_FAILURE     "Checksum fallito"
+#define D_TIMEOUT_WAITING_FOR         "Timeout attesa per"
+#define D_START_SIGNAL_LOW            "inizio segnale basso"
+#define D_START_SIGNAL_HIGH           "inizio segnale alto"
+#define D_PULSE                       "impulso"
+#define D_CHECKSUM_FAILURE            "Checksum fallito"
 
 // xsns_07_sht1x.ino
 #define D_SENSOR_DID_NOT_ACK_COMMAND  "Il sensore non ha eseguito il comando ACK"
@@ -594,26 +601,26 @@
 #define D_PARTICALS_BEYOND             "Particelle"
 
 // xsns_27_apds9960.ino
-#define D_GESTURE      "Gesto"
-#define D_COLOR_RED    "Rosso"
-#define D_COLOR_GREEN  "Verde"
-#define D_COLOR_BLUE   "Blu"
-#define D_CCT          "CCT"
-#define D_PROXIMITY    "Prossimità"
+#define D_GESTURE           "Gesto"
+#define D_COLOR_RED         "Rosso"
+#define D_COLOR_GREEN       "Verde"
+#define D_COLOR_BLUE        "Blu"
+#define D_CCT               "CCT"
+#define D_PROXIMITY         "Prossimità"
 
 // xsns_32_mpu6050.ino
-#define D_AX_AXIS "Accelerazione asse X"
-#define D_AY_AXIS "Accelerazione asse Y"
-#define D_AZ_AXIS "Accelerazione asse Z"
-#define D_GX_AXIS "Giroscopio asse X"
-#define D_GY_AXIS "Giroscopio asse Y"
-#define D_GZ_AXIS "Giroscopio asse Z"
+#define D_AX_AXIS           "Accelerazione asse X"
+#define D_AY_AXIS           "Accelerazione asse Y"
+#define D_AZ_AXIS           "Accelerazione asse Z"
+#define D_GX_AXIS           "Giroscopio asse X"
+#define D_GY_AXIS           "Giroscopio asse Y"
+#define D_GZ_AXIS           "Giroscopio asse Z"
 
 // xsns_33_QMC5883L.ino
-#define D_MX           "Asse X induzione"
-#define D_MY           "Asse Y induzione"
-#define D_MZ           "Asse Z induzione"
-#define D_MAGNETICFLD  "Induzione magnetica"
+#define D_MX                "Asse X induzione"
+#define D_MY                "Asse Y induzione"
+#define D_MZ                "Asse Z induzione"
+#define D_MAGNETICFLD       "Induzione magnetica"
 
 // xsns_34_hx711.ino
 #define D_HX_CAL_REMOVE     "Rimuovi peso"
@@ -693,6 +700,8 @@
 #define D_SENSOR_DS18X20                "DS18x20"
 #define D_SENSOR_I2C_SCL                "I2C - SCL"
 #define D_SENSOR_I2C_SDA                "I2C - SDA"
+#define D_SENSOR_I2C_SER_TX             "I2C Ser - TX"
+#define D_SENSOR_I2C_SER_RX             "I2C Ser - RX"
 #define D_SENSOR_I2S_MCLK               "I2S - MCLK"
 #define D_SENSOR_I2S_BCLK               "I2S - BCLK"
 #define D_SENSOR_I2S_WS_IN              "I2S - BCLK IN"
@@ -752,8 +761,8 @@
 #define D_SENSOR_MBR_TX                 "ModBr - TX"
 #define D_SENSOR_MBR_RX                 "ModBr - RX"
 #define D_SENSOR_MBR_TX_ENA             "ModBr - TX ON"
-#define D_SENSOR_SR04_TRIG              "SR04 Tri - TX"
-#define D_SENSOR_SR04_ECHO              "SR04 Ech - RX"
+#define D_SENSOR_SR04_TRIG              "SR04 - Tri/TX"
+#define D_SENSOR_SR04_ECHO              "SR04 - Ech/RX"
 #define D_SENSOR_NRG_MBS_TX             "NrgMbs - TX"
 #define D_SENSOR_NRG_MBS_RX             "NrgMbs - RX"
 #define D_SENSOR_NRG_MBS_TX_ENA         "NrgMbs - TX ON"
@@ -769,6 +778,8 @@
 #define D_SENSOR_WE517_RX               "WE517 - RX"
 #define D_SENSOR_LD2410_TX              "LD2410 - TX"
 #define D_SENSOR_LD2410_RX              "LD2410 - RX"
+#define D_SENSOR_LD2410S_TX             "LD2410S - TX"
+#define D_SENSOR_LD2410S_RX             "LD2410S - RX"
 #define D_GPIO_TM1621_CS                "TM1621 - CS"
 #define D_GPIO_TM1621_WR                "TM1621 - WR"
 #define D_GPIO_TM1621_RD                "TM1621 - RD"
@@ -778,6 +789,8 @@
 #define D_SENSOR_TM1638_CLK             "TM1638 - CLK"
 #define D_SENSOR_TM1638_DIO             "TM1638 - DIO"
 #define D_SENSOR_TM1638_STB             "TM1638 - STB"
+#define D_SENSOR_TM1640_CLK             "TM1640 - CLK"
+#define D_SENSOR_TM1640_DIN             "TM1640 - DIN"
 #define D_SENSOR_MAX7219_DIN            "MAX7219 - DIN"
 #define D_SENSOR_MAX7219_CS             "MAX7219 - CS"
 #define D_SENSOR_MAX7219_CLK            "MAX7219 - CLK"
@@ -825,6 +838,7 @@
 #define D_SENSOR_CSE7761_RX             "CSE7761 - RX"
 #define D_SENSOR_CSE7766_TX             "CSE7766 - TX"
 #define D_SENSOR_CSE7766_RX             "CSE7766 - RX"
+#define D_SENSOR_BL0906_RX              "BL0906 - RX"
 #define D_SENSOR_BL0939_RX              "BL0939 - RX"
 #define D_SENSOR_BL0942_RX              "BL0942 - RX"
 #define D_SENSOR_HM330X_SET             "HM330X - SET"
@@ -997,12 +1011,18 @@
 #define D_SENSOR_ME007_RX               "ME007 - RX"
 #define D_SENSOR_TUYAMCUBR_TX           "TuyaMCUBr - TX"
 #define D_SENSOR_TUYAMCUBR_RX           "TuyaMCUBr - RX"
+#define D_SENSOR_TWAI_TX                "TWAI - TX"
+#define D_SENSOR_TWAI_RX                "TWAI - RX"
+#define D_SENSOR_TWAI_BO                "TWAI - BusOff"
+#define D_SENSOR_TWAI_CLK               "TWAI - ClkOut"
 #define D_SENSOR_BIOPDU_PZEM0XX_TX      "BioPDU PZEM0XX - TX"
 #define D_SENSOR_BIOPDU_PZEM016_RX      "BioPDU PZEM016 - RX"
 #define D_SENSOR_BIOPDU_BIT             "BioPDU Bit"
 #define D_SENSOR_LOX_O2_RX              "LoxO2 - RX"
 #define D_GPIO_MAGIC_SWITCH             "MagicSwitch"
 #define D_SENSOR_WOOLIIS_RX             "Wooliis - RX"
+#define D_SENSOR_C8_CO2_5K_RX           "C8-CO2-5K - RX"
+#define D_SENSOR_C8_CO2_5K_TX           "C8-CO2-5K - TX"
 
 // Units
 #define D_UNIT_AMPERE                     "A"
@@ -1049,7 +1069,7 @@
 #define D_UNIT_SECOND                     "sec"
 #define D_UNIT_SECTORS                    "settori"
 #define D_UNIT_VA                         "VA"
-#define D_UNIT_VAR                        "VAr"
+#define D_UNIT_VAR                        "var"
 #define D_UNIT_VOLT                       "V"
 #define D_UNIT_WATT                       "W"
 #define D_UNIT_WATTHOUR                   "Wh"
@@ -1071,7 +1091,7 @@
 #define D_IMPORT_REACTIVE          "Potenza reattiva importata"
 #define D_EXPORT_REACTIVE          "Potenza reattiva esportata"
 #define D_TOTAL_REACTIVE           "Potenza reattiva totale"
-#define D_UNIT_KWARH               "kVArh"
+#define D_UNIT_KWARH               "kvarh"
 #define D_UNIT_ANGLE               "°"
 #define D_TOTAL_ACTIVE             "Potenza attiva totale"
 #define D_RESETTABLE_TOTAL_ACTIVE  "Potenza attiva totale (RST)"
@@ -1175,28 +1195,35 @@
 #define D_FP_ENROLL_ACTIVE           "Attivo"
 #define D_FP_ENROLL_INACTIVE         "Non attivo"
 // Indexed by Adafruit_Fingerprint.h defines
-#define D_FP_PACKETRECIEVEERR    "Errore comunicazione"           // 0x01 Error when receiving data package
-#define D_FP_NOFINGER             ""                              // 0x02 No finger on the sensor
-#define D_FP_IMAGEFAIL           "Errore immagine"                // 0x03 Failed to enroll the finger
-#define D_FP_IMAGEMESS           "Immmagine troppo danneggiata"   // 0x06 Failed to generate character file due to overly disorderly fingerprint image
-#define D_FP_FEATUREFAIL         "Impronta troppo piccola"        // 0x07 Failed to generate character file due to the lack of character point or small fingerprint image
-#define D_FP_NOMATCH             "Nessuna corrispondenza"         // 0x08 Finger doesn't match
-#define D_FP_NOTFOUND            "Corrispondenza non trovata"     // 0x09 Failed to find matching finger
-#define D_FP_ENROLLMISMATCH      "L'impronta non corrisponde"     // 0x0A Failed to combine the character files
-#define D_FP_BADLOCATION         "Locazione errata"               // 0x0B Addressed PageID is beyond the finger library
-#define D_FP_DBRANGEFAIL         "Errore intervallo DB"           // 0x0C Error when reading template from library or invalid template
-#define D_FP_UPLOADFEATUREFAIL   "Errore funzione upload"         // 0x0D Error when uploading template
-#define D_FP_PACKETRESPONSEFAIL  "Errore risposta pacchetto"      // 0x0E Module failed to receive the following data packages
-#define D_FP_UPLOADFAIL          "Errore upload"                  // 0x0F Error when uploading image
-#define D_FP_DELETEFAIL          "Errore eliminazione"            // 0x10 Failed to delete the template
-#define D_FP_DBCLEARFAIL         "Errore azzeramento DB"          // 0x11 Failed to clear finger library
-#define D_FP_PASSFAIL            "Errore password"                // 0x13 Find whether the fingerprint passed or failed
-#define D_FP_INVALIDIMAGE        "Immagine non valida"            // 0x15 Failed to generate image because of lac of valid primary image
-#define D_FP_FLASHERR            "Errore scrittura flash"         // 0x18 Error when writing flash
-#define D_FP_INVALIDREG          "Numero non valido"              // 0x1A Invalid register number
-#define D_FP_ADDRCODE            "Codice indirizzo"               // 0x20 Address code
-#define D_FP_PASSVERIFY          "Password verificata"            // 0x21 Verify the fingerprint passed
-#define D_FP_UNKNOWNERROR        "Errore"                         // Any other error
+#define D_FP_PACKETRECIEVEERR        "Errore comunicazione"           // 0x01 Error when receiving data package
+#define D_FP_NOFINGER                ""                               // 0x02 No finger on the sensor
+#define D_FP_IMAGEFAIL               "Errore immagine"                // 0x03 Failed to enroll the finger
+#define D_FP_IMAGEMESS               "Immmagine troppo danneggiata"   // 0x06 Failed to generate character file due to overly disorderly fingerprint image
+#define D_FP_FEATUREFAIL             "Impronta troppo piccola"        // 0x07 Failed to generate character file due to the lack of character point or small fingerprint image
+#define D_FP_NOMATCH                 "Nessuna corrispondenza"         // 0x08 Finger doesn't match
+#define D_FP_NOTFOUND                "Corrispondenza non trovata"     // 0x09 Failed to find matching finger
+#define D_FP_ENROLLMISMATCH          "L'impronta non corrisponde"     // 0x0A Failed to combine the character files
+#define D_FP_BADLOCATION             "Locazione errata"               // 0x0B Addressed PageID is beyond the finger library
+#define D_FP_DBRANGEFAIL             "Errore intervallo DB"           // 0x0C Error when reading template from library or invalid template
+#define D_FP_UPLOADFEATUREFAIL       "Errore funzione upload"         // 0x0D Error when uploading template
+#define D_FP_PACKETRESPONSEFAIL      "Errore risposta pacchetto"      // 0x0E Module failed to receive the following data packages
+#define D_FP_UPLOADFAIL              "Errore upload"                  // 0x0F Error when uploading image
+#define D_FP_DELETEFAIL              "Errore eliminazione"            // 0x10 Failed to delete the template
+#define D_FP_DBCLEARFAIL             "Errore azzeramento DB"          // 0x11 Failed to clear finger library
+#define D_FP_PASSFAIL                "Errore password"                // 0x13 Find whether the fingerprint passed or failed
+#define D_FP_INVALIDIMAGE            "Immagine non valida"            // 0x15 Failed to generate image because of lac of valid primary image
+#define D_FP_FLASHERR                "Errore scrittura flash"         // 0x18 Error when writing flash
+#define D_FP_INVALIDREG              "Numero non valido"              // 0x1A Invalid register number
+#define D_FP_ADDRCODE                "Codice indirizzo"               // 0x20 Address code
+#define D_FP_PASSVERIFY              "Password verificata"            // 0x21 Verify the fingerprint passed
+#define D_FP_UNKNOWNERROR            "Errore"                         // Any other error
+
+// xsns_90_hrg15.ino
+#define D_HRG_VALID              "Valido"
+#define D_HRG_ACTIVE             "Attivo"
+#define D_HRG_EVENT              "Evento"
+#define D_HRG_TOTAL              "Totale"
+#define D_HRG_FLOWRATE           "Portata"
 
 // xsns_96_flowratemeter.ino
 #define D_FLOWRATEMETER_NAME              "Portata"
@@ -1272,6 +1299,15 @@
 // ixrv92_pipsolar.ino
 #define D_SENSOR_PIPSOLAR_TX              "Pipsolar - TX"
 #define D_SENSOR_PIPSOLAR_RX              "Pipsolar - RX"
+
+// xsns_102_ld2410.ino
+#define D_MOVING_DISTANCE    "Distanza in movimento"
+#define D_STATIC_DISTANCE    "Distanza statica"
+#define D_DETECT_DISTANCE    "Rileva distanza"
+#define D_MOVING_ENERGY_T    "Obiettivo in movimento"
+#define D_STATIC_ENERGY_T    "Obiettivo statico"
+#define D_LD2410_PIN_STATE   "Stato pin di uscita"
+#define D_LD2410_LIGHT       "Sensore di luce"
 
 // xsns_115_wooliis.ino
 #define D_IMPORT                          "Importa"

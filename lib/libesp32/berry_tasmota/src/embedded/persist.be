@@ -2,7 +2,7 @@
 #- -#
 #- To solidify: -#
 #-
-  # load only persis_module and persist_module.init
+  # load only persist_module and persist_module.init
   import solidify
   solidify.dump(persist_module.init)
   # copy and paste into `be_persist_lib.c`
@@ -38,6 +38,11 @@ class Persist
     self._dirty = true
   end
   
+  #- force dirty -#
+  def dirty()
+    self._dirty = true
+  end
+
   def remove(k)
       self._p.remove(k)
       self._dirty = true
@@ -83,8 +88,8 @@ class Persist
     # print("Loading")
   end
 
-  def save()
-    if self._dirty    # do not save if not dirty
+  def save(force_save)
+    if self._dirty || force_save   # do not save if not dirty
       var f       # file object
       try
         f = open(self._filename, "w")

@@ -687,9 +687,11 @@ char* SettingsText(uint32_t index) {
 
   if (index >= SET_MAX) { // Index above SET_MAX are not stored in Settings
 #ifdef USE_WEBSERVER
+#ifndef FIRMWARE_MINIMAL
     if (SET_BUTTON17 <= index && index <= SET_BUTTON32)
       return (char*)GetWebButton(index-SET_BUTTON17+16);
-#endif
+#endif  // not FIRMWARE_MINIMAL
+#endif  // USE_WEBSERVER
     position += settings_text_size -1;  // Setting not supported - internal error - return empty string
   } else {
     SettingsUpdateFinished();
@@ -926,6 +928,14 @@ void SettingsSdkErase(void) {
 
 /********************************************************************************************/
 
+void SettingsMinimum(void) {
+  // Set life-saving parameters if out-of-range due to reconfig Settings Area
+  if (Settings->dns_timeout < 100) { Settings->dns_timeout = DNS_TIMEOUT; }
+  if (Settings->mqtt_keepalive < 1) { Settings->mqtt_keepalive = MQTT_KEEPALIVE; }
+  if (Settings->mqtt_socket_timeout < 1) { Settings->mqtt_socket_timeout = MQTT_SOCKET_TIMEOUT; }
+  if (Settings->mqtt_wifi_timeout < 1) { Settings->mqtt_wifi_timeout = MQTT_WIFI_CLIENT_TIMEOUT / 100; }
+}
+
 void SettingsDefault(void) {
   AddLog(LOG_LEVEL_INFO, PSTR(D_LOG_CONFIG D_USE_DEFAULTS));
   SettingsDefaultSet1();
@@ -1095,7 +1105,10 @@ void SettingsDefaultSet2(void) {
   flag2.emulation |= EMULATION;
   flag4.alexa_gen_1 |= EMULATION_HUE_1ST_GEN;
 #endif // FIRMWARE_MINIMAL
+  flag5.gui_module_name |= GUI_NOSHOW_MODULE;
+  flag6.gui_device_name |= GUI_NOSHOW_DEVICENAME;
   flag3.gui_hostname_ip |= GUI_SHOW_HOSTNAME;
+  flag6.gui_no_state_text |= GUI_NOSHOW_STATETEXT;
   flag3.mdns_enabled |= MDNS_ENABLED;
   Settings->webserver = WEB_SERVER;
   Settings->weblog_level = WEB_LOG_LEVEL;
@@ -1146,6 +1159,7 @@ void SettingsDefaultSet2(void) {
   flag3.no_hold_retain |= MQTT_NO_HOLD_RETAIN;
   flag3.use_underscore |= MQTT_INDEX_SEPARATOR;
   flag3.grouptopic_mode |= MQTT_GROUPTOPIC_FORMAT;
+  flag4.only_json_message |= MQTT_ONLY_JSON_OUTPUT;
   SettingsUpdateText(SET_MQTT_HOST, MQTT_HOST);
   Settings->mqtt_port = MQTT_PORT;
   SettingsUpdateText(SET_MQTT_CLIENT, PSTR(MQTT_CLIENT_ID));
@@ -1234,7 +1248,6 @@ void SettingsDefaultSet2(void) {
 
   // RF Bridge
 #ifndef FIRMWARE_MINIMAL    // not needed in minimal/safeboot because of disabled feature and Settings are not saved anyways
-  flag.rf_receive_decimal |= RF_DATA_RADIX;
 //  for (uint32_t i = 0; i < 17; i++) { Settings->rf_code[i][0] = 0; }
   memcpy_P(Settings->rf_code[0], kDefaultRfCode, 9);
 #endif // FIRMWARE_MINIMAL
@@ -1738,7 +1751,7 @@ void SettingsDelta(void) {
       Settings->web_time_end = 0;
     }
     if (Settings->version < 0x0B000003) {  // 11.0.0.3
-       memcpy(Settings->pulse_timer, Settings->ex_pulse_timer, 16);
+       memcpy(Settings->pulse_timer, (uint16_t*)&Settings->weight_precision, 16);
     }
     if (Settings->version < 0x0B000006) {  // 11.0.0.6
         Settings->weight_absconv_a = 0;
@@ -1831,6 +1844,37 @@ void SettingsDelta(void) {
     }
     if (Settings->version < 0x0E020003) {  // 14.2.0.3
       Settings->flag3.sb_receive_invert = 0;  // SetOption69  - (Serial) Invert Serial receive on SerialBridge
+    }
+    if (Settings->version < 0x0E020004) {  // 14.2.0.4
+      Settings->weight_precision = 0;      // Initialized by HX711 driver
+    }
+    if (Settings->version < 0x0E030002) {  // 14.3.0.2
+      Settings->sbflag1.dali_light = 1;
+    }
+    if (Settings->version < 0x0E030004) {  // 14.3.0.4
+      Settings->mbflag2.dali_group_sliders = 2;
+    }
+    if (Settings->version < 0x0E030006) {  // 14.3.0.6
+      char scolor[10];
+      WebHexCode(COL_BUTTON_OFF, GetTextIndexed(scolor, sizeof(scolor), COL_BUTTON_OFF, kWebColors));
+    }
+    if (Settings->version < 0x0E030007) {  // 14.3.0.7
+      // move up uint8_t knx_CB_registered from 4A8 to 533
+      memmove_P((uint8_t*)&Settings->knx_CB_registered, (uint8_t*)&Settings->switchmode, 1);
+      // move up uint8_t global_sensor_index[3] from 4C5 to 53C
+      memmove_P((uint8_t*)&Settings->global_sensor_index, (uint8_t*)&Settings->switchmode +29, 3);
+      // move dn uint8_t switchmode[MAX_SWITCHES_SET] from 4A9 to 4A8
+      memmove_P((uint8_t*)&Settings->switchmode, (uint8_t*)&Settings->switchmode +1, 28);
+      for (uint32_t i = 28; i < MAX_SWITCHES_SET; i++) {
+        Settings->switchmode[i] = SWITCH_MODE;
+      }
+      // move up int8_t shutter_tilt_pos[MAX_SHUTTERS], uint16_t influxdb_period and uint16_t rf_duplicate_timefrom 51C to 534
+      memmove_P((uint8_t*)&Settings->shutter_tilt_pos, (uint8_t*)&Settings->shutter_tilt_config +12, 8);
+      // move up int8_t shutter_tilt_config[5][MAX_SHUTTERS] from 508 to 510
+      memmove_P((uint8_t*)&Settings->shutter_tilt_config, (uint8_t*)&Settings->shutter_tilt_config -8, 20);
+      for (uint32_t i = 14; i < MAX_INTERLOCKS_SET; i++) {
+        Settings->interlock[i] = 0;
+      }
     }
 
     Settings->version = TASMOTA_VERSION;

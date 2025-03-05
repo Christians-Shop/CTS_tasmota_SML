@@ -761,12 +761,12 @@ bool WcPinUsed(void) {
   }
 
 #ifdef WEBCAM_DEV_DEBUG  
-  AddLog(LOG_LEVEL_DEBUG, PSTR("CAM: i2c_enabled_2: %d"), TasmotaGlobal.i2c_enabled_2);
+  AddLog(LOG_LEVEL_DEBUG, PSTR("CAM: i2c_enabled_2: %d"), TasmotaGlobal.i2c_enabled[1]);
 #endif
 
   if (!PinUsed(GPIO_WEBCAM_XCLK) || !PinUsed(GPIO_WEBCAM_PCLK) ||
       !PinUsed(GPIO_WEBCAM_VSYNC) || !PinUsed(GPIO_WEBCAM_HREF) ||
-      ((!PinUsed(GPIO_WEBCAM_SIOD) || !PinUsed(GPIO_WEBCAM_SIOC)) && !TasmotaGlobal.i2c_enabled_2)    // preferred option is to reuse and share I2Cbus 2
+      ((!PinUsed(GPIO_WEBCAM_SIOD) || !PinUsed(GPIO_WEBCAM_SIOC)) && !TasmotaGlobal.i2c_enabled[1])    // preferred option is to reuse and share I2Cbus 2
       ) {
         pin_used = false;
   }
@@ -974,7 +974,7 @@ uint32_t WcSetup(int32_t fsiz) {
     config.pin_href = Pin(GPIO_WEBCAM_HREF);      // HREF_GPIO_NUM;
     config.pin_sccb_sda = Pin(GPIO_WEBCAM_SIOD);  // SIOD_GPIO_NUM; - unset to use shared I2C bus 2
     config.pin_sccb_scl = Pin(GPIO_WEBCAM_SIOC);  // SIOC_GPIO_NUM;
-    if(TasmotaGlobal.i2c_enabled_2){              // configure SIOD and SIOC as SDA,2 and SCL,2
+    if(TasmotaGlobal.i2c_enabled[1]){              // configure SIOD and SIOC as SDA,2 and SCL,2
       config.sccb_i2c_port = 1;                   // reuse initialized bus 2, can be shared now
       if(config.pin_sccb_sda < 0){                // GPIO_WEBCAM_SIOD must not be set to really make it happen
 #ifdef WEBCAM_DEV_DEBUG  
@@ -1151,6 +1151,7 @@ uint32_t WcSetup(int32_t fsiz) {
   camera_sensor_info_t *info = esp_camera_sensor_get_info(&wc_s->id);
 
   AddLog(LOG_LEVEL_INFO, PSTR("CAM: %s Initialized"), info->name);
+  TasmotaGlobal.camera_initialized = true;
   Wc.up = 1;
   if (Wc.psram) { Wc.up = 2; }
 
@@ -2519,8 +2520,7 @@ void CmndWebcamGetPicStore(void) {
     bnum = XdrvMailbox.index;
   }
   if (bnum < 0 || bnum > MAX_PICSTORE) {
-    ResponseCmndError();
-    return;
+    return;  // Command Error
   }
 
   // if given 0, then get frame 1 first, and use frame 1 (the first frame, index 0).
@@ -2616,11 +2616,15 @@ int WebcamSavePic(int append) {
 }
 // "WCSAVEPIC1 /temp.jpg" "WCSAVEPIC2 /temp.jpg"
 void CmdWebcamSavePic(){
-  WebcamSavePic(0)? ResponseCmndDone(): ResponseCmndError();
+  if (WebcamSavePic(0)) {
+    ResponseCmndDone();
+  }    
 }
 // "WCAPPENDPIC1 /temp.jpg" "WCAPPENDPIC2 /temp.jpg"
 void CmdWebcamAppendPic(){
-  WebcamSavePic(1)? ResponseCmndDone(): ResponseCmndError();
+  if (WebcamSavePic(1)) {
+    ResponseCmndDone();
+  }
 }
 
 void CmndWebcamMenuVideoDisable(void) {
@@ -2947,6 +2951,18 @@ void WcUpdateStats(void) {
   Wc.loopcounter = 0;
 }
 
+void WcSensorStats(void) {
+  if (!Wc.up) { return; }
+
+  ResponseAppend_P(PSTR(",\"CAMERA\":{"
+                        "\"" D_WEBCAM_STATS_FPS "\":%d,"
+                        "\"" D_WEBCAM_STATS_CAMFAIL "\":%d,"
+                        "\"" D_WEBCAM_STATS_JPEGFAIL "\":%d,"
+                        "\"" D_WEBCAM_STATS_CLIENTFAIL "\":%d}"),
+                   WcStats.camfps, WcStats.camfail,
+                   WcStats.jpegfail, WcStats.clientfail);
+}
+
 #ifndef D_WEBCAM_STATE
 #define D_WEBCAM_STATE "State"
 #define D_WEBCAM_POWEREDOFF "PowerOff"
@@ -2990,6 +3006,9 @@ bool Xdrv99(uint32_t function) {
       break;
     case FUNC_EVERY_SECOND:
       WcUpdateStats();
+      break;
+    case FUNC_JSON_APPEND:
+      WcSensorStats();
       break;
     case FUNC_WEB_SENSOR:
       WcStatsShow();

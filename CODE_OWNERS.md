@@ -85,10 +85,10 @@ In addition to @arendst the following code is mainly owned by:
 | xdrv_71_magic_switch         | @barbudor
 | xdrv_72_pipsolar             | @chefpro
 | xdrv_73_lora                 | @arendst
-| xdrv_74                      |
-| xdrv_75                      |
-| xdrv_76                      |
-| xdrv_77                      |
+| xdrv_74_lorawan              | @arendst
+| xdrv_75_dali                 | @eeak, @arendst
+| xdrv_76_serial_i2c           | @s-hadinger
+| xdrv_77_wizmote              | @arendst
 | xdrv_78                      |
 | xdrv_79_esp32_ble            | @staars, @btsimonh
 | xdrv_81_esp32_webcam         | @gemu, @philrich
@@ -98,7 +98,7 @@ In addition to @arendst the following code is mainly owned by:
 | xdrv_86_esp32_sonoff_spm     | @arendst
 | xdrv_87_esp32_sonoff_tm1621  | @arendst
 | xdrv_88_esp32_shelly_pro     | @arendst
-| xdrv_89_esp32_dali           | @eeak
+| xdrv_89_                     |
 | xdrv_90_esp32_dingtian_relay | @barbudor
 | xdrv_91_                     |
 | xdrv_92_                     |
@@ -230,6 +230,7 @@ In addition to @arendst the following code is mainly owned by:
 | xsns_113_hc8                 | Daniel Maier
 | xsns_114_amsx915             | Bastian Urschel
 | xsns_115_wooliis             | Luca Melette
+| xsns_117_c8_co2_5k           | @jeroenvermeulen
 |                              |
 | xsns_127_esp32_sensors       | @arendst
 |                              |

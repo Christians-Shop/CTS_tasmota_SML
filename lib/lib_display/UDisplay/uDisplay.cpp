@@ -242,7 +242,7 @@ uDisplay::uDisplay(char *lp) : Renderer(800, 600) {
               if (wire_n == 1) {
                 wire = &Wire;
               } else {
-#ifdef ESP32               
+#if SOC_HP_I2C_NUM > 1
                 wire = &Wire1;
 #else
                 wire = &Wire;
@@ -599,6 +599,12 @@ uDisplay::uDisplay(char *lp) : Renderer(800, 600) {
           case 'B':
             lvgl_param.flushlines = next_val(&lp1);
             lvgl_param.data = next_val(&lp1);
+            // temporary fix to disable DMA due to a problem in esp-idf 5.3
+#ifdef ESP32
+#if ESP_IDF_VERSION >= ESP_IDF_VERSION_VAL(5, 3, 0)
+            lvgl_param.use_dma = false;
+#endif
+#endif
             break;
           case 'M':
             rotmap_xmin = next_val(&lp1);
@@ -630,7 +636,7 @@ uDisplay::uDisplay(char *lp) : Renderer(800, 600) {
                 if (ut_mode == 1) {
                   ut_wire = &Wire;
                 } else {
-#ifdef ESP32
+#if SOC_HP_I2C_NUM > 1
                   ut_wire = &Wire1;
 #else
                   ut_wire = &Wire;
@@ -674,14 +680,15 @@ uDisplay::uDisplay(char *lp) : Renderer(800, 600) {
     if (*lp == '\n' || *lp == ' ') {   // Add space char
       lp++;
     } else {
-      lp = strchr(lp, '\n');
-      if (!lp) {
-        lp = strchr(lp, ' ');
-        if (!lp) {
+      char *lp1;
+      lp1 = strchr(lp, '\n');
+      if (!lp1) {
+        lp1 = strchr(lp, ' ');
+        if (!lp1) {
           break;
         }
       }
-      lp++;
+      lp = lp1 + 1;
     }
   }
 
@@ -1070,7 +1077,7 @@ Renderer *uDisplay::Init(void) {
     if (wire_n == 0) {
       wire = &Wire;
     }
-#ifdef ESP32
+#if SOC_HP_I2C_NUM > 1
     if (wire_n == 1) {
       wire = &Wire1;
     }
@@ -1218,12 +1225,19 @@ Renderer *uDisplay::Init(void) {
     _panel_config->de_gpio_num = de;
     _panel_config->pclk_gpio_num = pclk;
 
+    // assume that byte swapping of 16-bit color is done only upon request
+    // via display.ini and not by callers of pushColor()
+    // -> swap bytes by swapping GPIO numbers
+    int8_t *par_db8 = lvgl_param.swap_color ? par_dbl : par_dbh;
     for (uint32_t cnt = 0; cnt < 8; cnt ++) {
-      _panel_config->data_gpio_nums[cnt] = par_dbh[cnt];
+      _panel_config->data_gpio_nums[cnt] = par_db8[cnt];
     }
+    par_db8 = lvgl_param.swap_color ? par_dbh : par_dbl;
     for (uint32_t cnt = 0; cnt < 8; cnt ++) {
-      _panel_config->data_gpio_nums[cnt + 8] = par_dbl[cnt];
+      _panel_config->data_gpio_nums[cnt + 8] = par_db8[cnt];
     }
+    lvgl_param.swap_color = 0;
+
     _panel_config->disp_gpio_num = GPIO_NUM_NC;
 
     _panel_config->flags.disp_active_low = 0;
@@ -1774,9 +1788,6 @@ void uDisplay::drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color) {
 
   if (interface == _UDSP_RGB) {
   #ifdef USE_ESP32_S3
-    if (lvgl_param.swap_color) {
-      color = color << 8 | color >> 8;
-    }
     if (cur_rot > 0) {
       while (h--) {
         drawPixel_RGB(x , y , color);
@@ -1847,9 +1858,6 @@ void uDisplay::drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color) {
 
   if (interface == _UDSP_RGB) {
 #ifdef USE_ESP32_S3
-    if (lvgl_param.swap_color) {
-      color = color << 8 | color >> 8;
-    }
     if (cur_rot > 0) {
       while (w--) {
         drawPixel_RGB(x , y , color);
@@ -2221,7 +2229,6 @@ void uDisplay::pushColorsMono(uint16_t *data, uint16_t len, bool rgb16_swap) {
 static inline void lvgl_color_swap(uint16_t *data, uint16_t len) { for (uint32_t i = 0; i < len; i++) (data[i] = data[i] << 8 | data[i] >> 8); }
 
 void uDisplay::pushColors(uint16_t *data, uint16_t len, boolean not_swapped) {
-  uint16_t color;
 
   if (lvgl_param.swap_color) {
     not_swapped = !not_swapped;
@@ -2231,66 +2238,21 @@ void uDisplay::pushColors(uint16_t *data, uint16_t len, boolean not_swapped) {
 
   // Isolating _UDSP_RGB to increase code sharing
   //
-  // LVGL documentation suggest to call the following:
-  //    lv_draw_sw_rgb565_swap() to invert bytes
-  //    esp_lcd_panel_draw_bitmap() to paste bytes
-  // but it appears to be faster to include the color swap in the copy loop
-  // because the CPU is much faster than PSRAM (SPI bus), therefore
-  // swapping bytes on the fly costs zero performance
-  //
-  // not_swapped == false : called from LVGL bytes are swapped
-  // not_swapped == true : called from displaytext, no byte swap, currently no dma here
+  // Use ESP-IDF LCD driver to push colors and rely on the following assumptions:
+  // * bytes swapping is already handled in the driver configuration (see uDisplay::Init()),
+  // * pushColors() is only called with not_swapped equals true,
+  // * cache flushing is done by the LCD driver.
   if (interface == _UDSP_RGB) {
 #ifdef USE_ESP32_S3
+    if (!not_swapped) {
+      // internal error -> write error message but continue (with possibly wrong colors)
+      AddLog(LOG_LEVEL_ERROR, PSTR("DSP: Unexpected byte-swapping requested in pushColors()"));
+    }
+
     // check that bytes count matches the size of area, and remove from inner loop
     if ((seta_yp2 - seta_yp1) * (seta_xp2 - seta_xp2) > len) { return; }
 
-    uint16_t lenc = len;
-
-    if (cur_rot > 0) {
-      for (uint32_t y = seta_yp1; y < seta_yp2; y++) {
-        seta_yp1++;
-        for (uint32_t x = seta_xp1; x < seta_xp2; x++) {
-          uint16_t color = *data++;
-          if (!not_swapped) { color = color << 8 | color >> 8; }
-          drawPixel_RGB(x, y, color);
-          lenc--;
-          if (!lenc) return;         // failsafe - exist if len (pixel number) is exhausted
-        }
-      }
-    } else {
-      uint16_t *fb_y = rgb_fb + (int32_t)seta_yp1 * _width;
-      for (uint32_t y = seta_yp1; y < seta_yp2; y++) {
-        uint16_t * fb_xy = fb_y + seta_xp1;
-        // we get the 'not_swapped' test outside of the inner loop
-        if (not_swapped) {
-          for (uint32_t x = seta_xp1; x < seta_xp2; x++) {
-            uint16_t color = *data++;
-            *fb_xy = color;
-            fb_xy++;
-            lenc--;
-            if (!lenc) break;         // failsafe - exist if len (pixel number) is exhausted
-          }
-        } else {
-          for (uint32_t x = seta_xp1; x < seta_xp2; x++) {
-            uint16_t color = *data++;
-            color = color << 8 | color >> 8;
-            *fb_xy = color;
-            fb_xy++;
-            lenc--;
-            if (!lenc) break;         // failsafe - exist if len (pixel number) is exhausted
-          }
-        }
-        uint16_t * flush_ptr = rgb_fb + (int32_t)seta_yp1 * _width + seta_xp1;
-        esp_cache_msync(flush_ptr, (seta_xp2 - seta_xp1) * 2, 0);
-        fb_y += _width;
-        seta_yp1++;
-        if (!lenc) break; 
-      }
-      // using esp_cache_msync() to flush the PSRAM cache and ensure that all data is actually written to PSRAM
-      // from https://github.com/espressif/esp-idf/blob/636ff35b52f10e1a804a3760a5bd94e68f4b1b71/components/esp_lcd/rgb/esp_lcd_panel_rgb.c#L159
-
-    }
+    esp_lcd_panel_draw_bitmap(_panel_handle, seta_xp1, seta_yp1, seta_xp2, seta_yp2, (void *)data);
 #endif
     return;
   }
@@ -2325,6 +2287,7 @@ void uDisplay::pushColors(uint16_t *data, uint16_t len, boolean not_swapped) {
         uint8_t *line = (uint8_t*)malloc(len * 3);
         uint8_t *lp = line;
         if (line) {
+          uint16_t color;
           for (uint32_t cnt = 0; cnt < len; cnt++) {
             color = *data++;
             color = (color << 8) | (color >> 8);
@@ -2459,9 +2422,6 @@ void uDisplay::drawPixel(int16_t x, int16_t y, uint16_t color) {
 
 #ifdef USE_ESP32_S3
   if (interface == _UDSP_RGB) {
-    if (lvgl_param.swap_color) {
-      color = color << 8 | color >> 8;
-    }
     drawPixel_RGB(x, y, color);
     return;
   }
@@ -2544,6 +2504,15 @@ void uDisplay::setRotation(uint8_t rotation) {
       break;
   }
 
+#ifdef USE_ESP32_S3
+  if (interface == _UDSP_RGB) {
+    // utilize the ESP-IDF LCD driver's support for display rotation:
+    // mirror x axis for rotation 1 and 2, mirror y axis for rotation 2 and 3
+    esp_lcd_panel_mirror(_panel_handle, rotation == 1 || rotation == 2, rotation & 2);
+    // swap x/y for rotation 1 and 3
+    esp_lcd_panel_swap_xy(_panel_handle, rotation & 1);
+  }
+#endif // USE_ESP32_S3
 }
 
 void udisp_bpwr(uint8_t on);

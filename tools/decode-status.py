@@ -215,8 +215,12 @@ a_setoption = [[
     "(NeoPool) Output sensitive data (1)",
     "(MQTT) Disable publish ModbusReceived MQTT messages (1), you must use event trigger rules instead",
     "(Counter) Enable counting on both rising and falling edge (1)",
-    "","",
-    "","","","",
+    "(LD2410) Disable generate moving event by sensor report - use LD2410 out pin for events (1)",
+    "(GUI) Disable display of state text (1)",
+    "(Energy) Do not add export energy to energy today (1)",
+    "(GUI) Disable display of GUI device name (1)",
+    "(WizMote) Enable WiZ Smart Remote support (1)",
+    "",
     "","","","",
     "","","","",
     "","","",""
@@ -306,8 +310,8 @@ a_features = [[
     ],[
     "USE_MAGIC_SWITCH","USE_PIPSOLAR","USE_GPIO_VIEWER","USE_AMSX915",
     "USE_SPI_LORA","USE_SPL06_007","USE_QMP6988","USE_WOOLIIS",
-    "","","","",
-    "","","","",
+    "USE_HX711_M5SCALES","USE_RX8010","USE_PCF85063","USE_ESP32_TWAI",
+    "USE_C8_CO2_5K","","","",
     "","","","",
     "","","","",
     "","","","",
@@ -339,7 +343,7 @@ else:
         obj = json.load(fp)
 
 def StartDecode():
-    print ("\n*** decode-status.py v14.2.0.3 by Theo Arends and Jacek Ziolkowski ***")
+    print ("\n*** decode-status.py v14.4.1.4 by Theo Arends and Jacek Ziolkowski ***")
 
 #    print("Decoding\n{}".format(obj))
 

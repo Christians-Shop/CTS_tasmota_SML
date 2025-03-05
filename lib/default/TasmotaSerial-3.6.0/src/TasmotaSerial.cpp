@@ -172,10 +172,13 @@ void TasmotaSerial::Esp32Begin(void) {
     // At 19200, 120 chars are ~60ms
     // At 76800, 120 chars are ~15ms
     uart_set_rx_full_threshold(m_uart, 120);
-  } else {
+  } else if (m_speed == 115200) {
     // At 115200, 256 chars are ~20ms
     // Zigbee requires to keep frames together, i.e. 256 bytes max
     uart_set_rx_full_threshold(m_uart, 256);
+  } else {
+    // At even higher speeds set 75% of the buffer
+    uart_set_rx_full_threshold(m_uart, serial_buffer_size * 3 / 4);
   }
   // For bitrate below 115200, set the Rx time out to 6 chars instead of the default 10
   if (m_speed < 115200) {
@@ -475,6 +478,42 @@ size_t TasmotaSerial::write(uint8_t b) {
   }
   return size;
 }
+
+#ifdef ESP32
+// Add ability to change parity on the fly, for RS-485
+// See https://github.com/arendst/Tasmota/discussions/22272
+int32_t TasmotaSerial::setConfig(uint32_t config) {
+
+  uint32_t data_bits_before = (m_config & 0xc) >> 2;
+  uint32_t parity_before = m_config & 0x3;
+  uint32_t stop_bits_before = (m_config & 0x30) >> 4;
+
+  uint32_t data_bits = (config & 0xc) >> 2;
+  uint32_t parity = config & 0x3;
+  uint32_t stop_bits = (config & 0x30) >> 4;
+
+  esp_err_t err;
+
+  if (data_bits_before != data_bits) {
+    if (err = uart_set_word_length(m_uart, (uart_word_length_t) data_bits)) {
+      return (int32_t) err;
+    }
+  }
+  if (parity_before != parity) {
+    if (err = uart_set_parity(m_uart, (uart_parity_t) parity)) {
+      return (int32_t) err;
+    }
+  }
+  if (stop_bits_before != stop_bits) {
+    if (err = uart_set_stop_bits(m_uart, (uart_stop_bits_t) stop_bits)) {
+      return (int32_t) err;
+    }
+  }
+
+  m_config = config;
+  return 0;   // no error
+}
+#endif
 
 #ifdef ESP8266
 void IRAM_ATTR TasmotaSerial::rxRead(void) {

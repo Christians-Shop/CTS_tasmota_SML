@@ -9,6 +9,7 @@ extern "C" {
 
 #include "be_ctypes.h"
 #include "be_mapping.h"
+#include "../src/lv_colorwheel.h"
 
 /* `lv_style` methods */
 const be_ntv_func_def_t lv_style_func[] = {
@@ -817,6 +818,7 @@ const be_ntv_func_def_t lv_timer_func[] = {
 /* `lv_animimg` methods */
 #ifdef BE_LV_WIDGET_ANIMIMG
 const be_ntv_func_def_t lv_animimg_func[] = {
+  { "get_anim", { (const void*) &lv_animimg_get_anim, "lv.anim", "(lv.obj)" } },
   { "get_duration", { (const void*) &lv_animimg_get_duration, "i", "(lv.obj)" } },
   { "get_repeat_count", { (const void*) &lv_animimg_get_repeat_count, "i", "(lv.obj)" } },
   { "get_src_count", { (const void*) &lv_animimg_get_src_count, "i", "(lv.obj)" } },
@@ -1148,6 +1150,30 @@ const be_ntv_func_def_t lv_menu_func[] = {
 };
 #endif // BE_LV_WIDGET_MENU
 
+/* `lv_menu_page` methods */
+#ifdef BE_LV_WIDGET_MENU_PAGE
+const be_ntv_func_def_t lv_menu_page_func[] = {
+};
+#endif // BE_LV_WIDGET_MENU_PAGE
+
+/* `lv_menu_cont` methods */
+#ifdef BE_LV_WIDGET_MENU_CONT
+const be_ntv_func_def_t lv_menu_cont_func[] = {
+};
+#endif // BE_LV_WIDGET_MENU_CONT
+
+/* `lv_menu_section` methods */
+#ifdef BE_LV_WIDGET_MENU_SECTION
+const be_ntv_func_def_t lv_menu_section_func[] = {
+};
+#endif // BE_LV_WIDGET_MENU_SECTION
+
+/* `lv_menu_separator` methods */
+#ifdef BE_LV_WIDGET_MENU_SEPARATOR
+const be_ntv_func_def_t lv_menu_separator_func[] = {
+};
+#endif // BE_LV_WIDGET_MENU_SEPARATOR
+
 /* `lv_msgbox` methods */
 #ifdef BE_LV_WIDGET_MSGBOX
 const be_ntv_func_def_t lv_msgbox_func[] = {
@@ -1398,6 +1424,20 @@ const be_ntv_func_def_t lv_tileview_func[] = {
 };
 #endif // BE_LV_WIDGET_TILEVIEW
 
+/* `lv_colorwheel` methods */
+#ifdef BE_LV_WIDGET_COLORWHEEL
+const be_ntv_func_def_t lv_colorwheel_func[] = {
+  { "get_color_mode", { (const void*) &lv_colorwheel_get_color_mode, "i", "(lv.obj)" } },
+  { "get_color_mode_fixed", { (const void*) &lv_colorwheel_get_color_mode_fixed, "b", "(lv.obj)" } },
+  { "get_hsv", { (const void*) &lv_colorwheel_get_hsv, "i", "(lv.obj)" } },
+  { "get_rgb", { (const void*) &lv_colorwheel_get_rgb, "lv.color", "(lv.obj)" } },
+  { "set_hsv", { (const void*) &lv_colorwheel_set_hsv, "b", "(lv.obj)i" } },
+  { "set_mode", { (const void*) &lv_colorwheel_set_mode, "", "(lv.obj)i" } },
+  { "set_mode_fixed", { (const void*) &lv_colorwheel_set_mode_fixed, "", "(lv.obj)b" } },
+  { "set_rgb", { (const void*) &lv_colorwheel_set_rgb, "b", "(lv.obj)(lv.color)" } },
+};
+#endif // BE_LV_WIDGET_COLORWHEEL
+
 extern const bclass be_class_lv_anim;
 extern const bclass be_class_lv_animimg;
 extern const bclass be_class_lv_arc;
@@ -1409,6 +1449,7 @@ extern const bclass be_class_lv_canvas;
 extern const bclass be_class_lv_chart;
 extern const bclass be_class_lv_checkbox;
 extern const bclass be_class_lv_color;
+extern const bclass be_class_lv_colorwheel;
 extern const bclass be_class_lv_display;
 extern const bclass be_class_lv_dropdown;
 extern const bclass be_class_lv_event;
@@ -1423,6 +1464,10 @@ extern const bclass be_class_lv_led;
 extern const bclass be_class_lv_line;
 extern const bclass be_class_lv_list;
 extern const bclass be_class_lv_menu;
+extern const bclass be_class_lv_menu_cont;
+extern const bclass be_class_lv_menu_page;
+extern const bclass be_class_lv_menu_section;
+extern const bclass be_class_lv_menu_separator;
 extern const bclass be_class_lv_msgbox;
 extern const bclass be_class_lv_obj;
 extern const bclass be_class_lv_qrcode;
@@ -1475,6 +1520,9 @@ const be_ntv_class_def_t lv_classes[] = {
   { "lv_checkbox", &be_class_lv_checkbox, lv_checkbox_func, sizeof(lv_checkbox_func) / sizeof(lv_checkbox_func[0]) },
 #endif // BE_LV_WIDGET_CHECKBOX
   { "lv_color", &be_class_lv_color, lv_color_func, sizeof(lv_color_func) / sizeof(lv_color_func[0]) },
+#ifdef BE_LV_WIDGET_COLORWHEEL
+  { "lv_colorwheel", &be_class_lv_colorwheel, lv_colorwheel_func, sizeof(lv_colorwheel_func) / sizeof(lv_colorwheel_func[0]) },
+#endif // BE_LV_WIDGET_COLORWHEEL
   { "lv_display", &be_class_lv_display, lv_display_func, sizeof(lv_display_func) / sizeof(lv_display_func[0]) },
 #ifdef BE_LV_WIDGET_DROPDOWN
   { "lv_dropdown", &be_class_lv_dropdown, lv_dropdown_func, sizeof(lv_dropdown_func) / sizeof(lv_dropdown_func[0]) },
@@ -1507,6 +1555,18 @@ const be_ntv_class_def_t lv_classes[] = {
 #ifdef BE_LV_WIDGET_MENU
   { "lv_menu", &be_class_lv_menu, lv_menu_func, sizeof(lv_menu_func) / sizeof(lv_menu_func[0]) },
 #endif // BE_LV_WIDGET_MENU
+#ifdef BE_LV_WIDGET_MENU_CONT
+  { "lv_menu_cont", &be_class_lv_menu_cont, lv_menu_cont_func, sizeof(lv_menu_cont_func) / sizeof(lv_menu_cont_func[0]) },
+#endif // BE_LV_WIDGET_MENU_CONT
+#ifdef BE_LV_WIDGET_MENU_PAGE
+  { "lv_menu_page", &be_class_lv_menu_page, lv_menu_page_func, sizeof(lv_menu_page_func) / sizeof(lv_menu_page_func[0]) },
+#endif // BE_LV_WIDGET_MENU_PAGE
+#ifdef BE_LV_WIDGET_MENU_SECTION
+  { "lv_menu_section", &be_class_lv_menu_section, lv_menu_section_func, sizeof(lv_menu_section_func) / sizeof(lv_menu_section_func[0]) },
+#endif // BE_LV_WIDGET_MENU_SECTION
+#ifdef BE_LV_WIDGET_MENU_SEPARATOR
+  { "lv_menu_separator", &be_class_lv_menu_separator, lv_menu_separator_func, sizeof(lv_menu_separator_func) / sizeof(lv_menu_separator_func[0]) },
+#endif // BE_LV_WIDGET_MENU_SEPARATOR
 #ifdef BE_LV_WIDGET_MSGBOX
   { "lv_msgbox", &be_class_lv_msgbox, lv_msgbox_func, sizeof(lv_msgbox_func) / sizeof(lv_msgbox_func[0]) },
 #endif // BE_LV_WIDGET_MSGBOX
@@ -1656,20 +1716,24 @@ const size_t lv_classes_size = sizeof(lv_classes) / sizeof(lv_classes[0]);
 #endif // BE_LV_WIDGET_LIST
   /* `lv_menu` methods */
 #ifdef BE_LV_WIDGET_MENU
-  int be_ntv_lv_menu_init(bvm *vm)       { return be_call_c_func(vm, (void*) &lv_menu_cont_create, "+_p", "(lv.obj)"); }
-#endif // BE_LV_WIDGET_MENU
-#ifdef BE_LV_WIDGET_MENU
   int be_ntv_lv_menu_init(bvm *vm)       { return be_call_c_func(vm, (void*) &lv_menu_create, "+_p", "(lv.obj)"); }
 #endif // BE_LV_WIDGET_MENU
-#ifdef BE_LV_WIDGET_MENU
-  int be_ntv_lv_menu_init(bvm *vm)       { return be_call_c_func(vm, (void*) &lv_menu_page_create, "+_p", "(lv.obj)c"); }
-#endif // BE_LV_WIDGET_MENU
-#ifdef BE_LV_WIDGET_MENU
-  int be_ntv_lv_menu_init(bvm *vm)       { return be_call_c_func(vm, (void*) &lv_menu_section_create, "+_p", "(lv.obj)"); }
-#endif // BE_LV_WIDGET_MENU
-#ifdef BE_LV_WIDGET_MENU
-  int be_ntv_lv_menu_init(bvm *vm)       { return be_call_c_func(vm, (void*) &lv_menu_separator_create, "+_p", "(lv.obj)"); }
-#endif // BE_LV_WIDGET_MENU
+  /* `lv_menu_page` methods */
+#ifdef BE_LV_WIDGET_MENU_PAGE
+  int be_ntv_lv_menu_page_init(bvm *vm)       { return be_call_c_func(vm, (void*) &lv_menu_page_create, "+_p", "(lv.obj)c"); }
+#endif // BE_LV_WIDGET_MENU_PAGE
+  /* `lv_menu_cont` methods */
+#ifdef BE_LV_WIDGET_MENU_CONT
+  int be_ntv_lv_menu_cont_init(bvm *vm)       { return be_call_c_func(vm, (void*) &lv_menu_cont_create, "+_p", "(lv.obj)"); }
+#endif // BE_LV_WIDGET_MENU_CONT
+  /* `lv_menu_section` methods */
+#ifdef BE_LV_WIDGET_MENU_SECTION
+  int be_ntv_lv_menu_section_init(bvm *vm)       { return be_call_c_func(vm, (void*) &lv_menu_section_create, "+_p", "(lv.obj)"); }
+#endif // BE_LV_WIDGET_MENU_SECTION
+  /* `lv_menu_separator` methods */
+#ifdef BE_LV_WIDGET_MENU_SEPARATOR
+  int be_ntv_lv_menu_separator_init(bvm *vm)       { return be_call_c_func(vm, (void*) &lv_menu_separator_create, "+_p", "(lv.obj)"); }
+#endif // BE_LV_WIDGET_MENU_SEPARATOR
   /* `lv_msgbox` methods */
 #ifdef BE_LV_WIDGET_MSGBOX
   int be_ntv_lv_msgbox_init(bvm *vm)       { return be_call_c_func(vm, (void*) &lv_msgbox_create, "+_p", "(lv.obj)"); }
@@ -1726,6 +1790,10 @@ const size_t lv_classes_size = sizeof(lv_classes) / sizeof(lv_classes[0]);
 #ifdef BE_LV_WIDGET_TILEVIEW
   int be_ntv_lv_tileview_init(bvm *vm)       { return be_call_c_func(vm, (void*) &lv_tileview_create, "+_p", "(lv.obj)"); }
 #endif // BE_LV_WIDGET_TILEVIEW
+  /* `lv_colorwheel` methods */
+#ifdef BE_LV_WIDGET_COLORWHEEL
+  int be_ntv_lv_colorwheel_init(bvm *vm)       { return be_call_c_func(vm, (void*) &lv_colorwheel_create, "+_p", "(lv.obj)b"); }
+#endif // BE_LV_WIDGET_COLORWHEEL
 
 // create font either empty or from parameter on stack
 int lvbe_font_create(bvm *vm)       { return be_call_c_func(vm, NULL, "+_p", ""); }

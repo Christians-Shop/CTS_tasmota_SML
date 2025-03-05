@@ -28,9 +28,13 @@ extern const bclass be_class_lv_qrcode;
 extern const bclass be_class_lv_chart;
 extern const bclass be_class_lv_spangroup;
 extern const bclass be_class_lv_span;
+extern const bclass be_class_lv_tabview;
 extern const bclass be_class_lv_button;
 extern const bclass be_class_lv_image;
 extern const bclass be_class_lv_buttonmatrix;
+extern const bclass be_class_lv_msgbox;
+// ported from LVGL 8
+extern const bclass be_class_lv_colorwheel;
 
 #include "solidify/solidified_lv_haspmota.h"
 

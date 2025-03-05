@@ -38,25 +38,24 @@ const uint32_t POWER_SIZE = 32;             // Power (relay) bit count
  * Constants
 \*********************************************************************************************/
 
-// Why 28? Because in addition to relays there may be lights and uint32_t bitmap can hold up to 32 devices
 #ifdef ESP8266
 const uint8_t MAX_RELAYS = 8;               // Max number of relays selectable on GPIO
-const uint8_t MAX_INTERLOCKS = 4;           // Max number of interlock groups (up to MAX_INTERLOCKS_SET)
+const uint8_t MAX_INTERLOCKS = 16;          // Max number of interlock groups (up to MAX_INTERLOCKS_SET)
 const uint8_t MAX_SWITCHES = 8;             // Max number of switches selectable on GPIO
 const uint8_t MAX_KEYS = 8;                 // Max number of keys or buttons selectable on GPIO
 #endif  // ESP8266
 #ifdef ESP32
-const uint8_t MAX_RELAYS = 28;              // Max number of relays selectable on GPIO
-const uint8_t MAX_INTERLOCKS = 14;          // Max number of interlock groups (up to MAX_INTERLOCKS_SET)
-const uint8_t MAX_SWITCHES = 28;            // Max number of switches selectable on GPIO
-const uint8_t MAX_KEYS = 28;                // Max number of keys or buttons selectable on GPIO
+const uint8_t MAX_RELAYS = 32;              // Max number of relays selectable on GPIO
+const uint8_t MAX_INTERLOCKS = 16;          // Max number of interlock groups (up to MAX_INTERLOCKS_SET)
+const uint8_t MAX_SWITCHES = 32;            // Max number of switches selectable on GPIO
+const uint8_t MAX_KEYS = 32;                // Max number of keys or buttons selectable on GPIO
 #endif  // ESP32
 const uint8_t MAX_RELAYS_SET = 32;          // Max number of relays
 const uint8_t MAX_KEYS_SET = 32;            // Max number of keys
 
 // Changes to the following MAX_ defines will impact settings layout
-const uint8_t MAX_INTERLOCKS_SET = 14;      // Max number of interlock groups (MAX_RELAYS_SET / 2)
-const uint8_t MAX_SWITCHES_SET = 28;        // Max number of switches
+const uint8_t MAX_INTERLOCKS_SET = 16;      // Max number of interlock groups (MAX_RELAYS_SET / 2)
+const uint8_t MAX_SWITCHES_SET = 32;        // Max number of switches
 const uint8_t MAX_LEDS = 4;                 // Max number of leds
 const uint8_t MAX_PWMS_LEGACY = 5;          // Max number of PWM channels in first settings block - Legacy limit for ESP8266, but extended for ESP32 (see below)
 #ifdef ESP32                                // Max number of PWM channels (total including extended) - ESP32 only
@@ -94,26 +93,29 @@ const uint16_t VL53LXX_MAX_SENSORS = 8;     // Max number of VL53L0X sensors
 const uint8_t MAX_SR04 = 3; // Max number of SR04 ultrasonic sensors
 
 #ifdef ESP32
-const uint8_t MAX_I2C = 2;                  // Max number of I2C controllers (ESP32 = 2)
+
+// SPI
 const uint8_t MAX_SPI = 2;                  // Max number of Hardware SPI controllers (ESP32 = 2)
-const uint8_t MAX_I2S = 2;                  // Max number of Hardware I2S controllers (ESP32 = 2)
-  #if CONFIG_IDF_TARGET_ESP32
-  const uint8_t MAX_RMT = 8;                // Max number or RMT channels (ESP32 only)
-  #elif CONFIG_IDF_TARGET_ESP32S2
-  const uint8_t MAX_RMT = 4;                // Max number or RMT channels (ESP32S2 only)
-  #elif CONFIG_IDF_TARGET_ESP32S3
-  const uint8_t MAX_RMT = 1;                // Max number or RMT channels (ESP32S3 only)
-  #elif CONFIG_IDF_TARGET_ESP32C3 || CONFIG_IDF_TARGET_ESP32C6
-  const uint8_t MAX_RMT = 2;                // Max number or RMT channels (ESP32C3 only)
-  #else
-  const uint8_t MAX_RMT = 0;                // Max number or RMT channels (0 if unknown)
-  #endif
-#else
-const uint8_t MAX_I2C = 0;                  // Max number of I2C controllers (ESP8266 = 0, no choice)
-const uint8_t MAX_SPI = 0;                  // Max number of Hardware SPI controllers (ESP8266 = 0, no choice)
+
+// I2S
+#ifdef SOC_I2S_SUPPORTED
+  const uint8_t MAX_I2S = SOC_I2S_NUM;
+#else  // SOC_I2S_SUPPORTED
+  const uint8_t MAX_I2S = 0;
+#endif // SOC_I2S_SUPPORTED
+
+// RMT
+#ifdef SOC_RMT_SUPPORTED
+  const uint8_t MAX_RMT = (SOC_RMT_GROUPS) * (SOC_RMT_TX_CANDIDATES_PER_GROUP);
+#else // SOC_RMT_SUPPORTED
+  const uint8_t MAX_RMT = 0;
+#endif // SOC_RMT_SUPPORTED
+
+#else // ESP32 - now ESP8266
+const uint8_t MAX_SPI = 1;                  // Max number of Hardware SPI controllers
 const uint8_t MAX_I2S = 0;                  // Max number of Hardware I2S controllers (ESP8266 = 0, no choice)
 const uint8_t MAX_RMT = 0;                  // No RMT channel on ESP8266
-#endif
+#endif // ESP32
 
 // Changes to the following MAX_ defines need to be in line with enum SettingsTextIndex
 const uint8_t MAX_MQTT_PREFIXES = 3;        // Max number of MQTT prefixes (cmnd, stat, tele)
@@ -285,8 +287,12 @@ const uint32_t LOOP_SLEEP_DELAY = 50;       // Lowest number of milliseconds to 
 #define KNX_SCENE              31
 #define KNX_DIMMER             32   // aka DPT_Scaling 5.001
 #define KNX_COLOUR             33   // aka DPT_Colour_RGB 232.600 or DPT_Colour_RGBW 251.600
-#define KNX_MAX_device_param   33
-#define MAX_KNXTX_CMNDS        5
+#define KNX_SLOT6              34
+#define KNX_SLOT7              35
+#define KNX_SLOT8              36
+#define KNX_SLOT9              37
+#define KNX_MAX_device_param   37
+#define MAX_KNXTX_CMNDS        9
 
 // XPT2046 resistive touch driver min/max raw values
 #define	XPT2046_MINX			192
@@ -333,6 +339,14 @@ const uint32_t LOOP_SLEEP_DELAY = 50;       // Lowest number of milliseconds to 
   #define WIFI_SENSITIVITY_54g  -750
   #define WIFI_SENSITIVITY_n    -720
 #endif
+
+#ifdef ESP32
+#if SOC_TOUCH_SENSOR_VERSION == 1    // ESP32
+#define SOC_TOUCH_VERSION_1
+#elif SOC_TOUCH_SENSOR_VERSION == 2  // ESP32S2, ESP32S3
+#define SOC_TOUCH_VERSION_2
+#endif  // SOC_TOUCH_SENSOR_VERSION
+#endif  // ESP32
 
 /*********************************************************************************************\
  * Enumeration

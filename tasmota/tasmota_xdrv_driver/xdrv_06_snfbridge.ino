@@ -242,7 +242,11 @@ void SonoffBridgeReceived(void)
         if (Settings->flag.rf_receive_decimal) {  // SetOption28 - RF receive data format
           snprintf_P(stemp, sizeof(stemp), PSTR("%u"), received_id);
         } else {
+#ifdef FIX_JSON_HEXADECIMAL
+          snprintf_P(stemp, sizeof(stemp), PSTR("\"0x%06X\""), received_id);
+#else
           snprintf_P(stemp, sizeof(stemp), PSTR("\"%06X\""), received_id);
+#endif  // FIX_JSON_HEXADECIMAL
         }
         ResponseTime_P(PSTR(",\"" D_JSON_RFRECEIVED "\":{\"" D_JSON_SYNC "\":%d,\"" D_JSON_LOW "\":%d,\"" D_JSON_HIGH "\":%d,\"" D_JSON_DATA "\":%s,\"" D_CMND_PREFIX_RF D_CMND_RFKEY "\":%s}}"),
           sync_time, low_time, high_time, stemp, rfkey);
@@ -512,6 +516,7 @@ void CmndRfTimeout(void) {
 }
 
 #ifdef USE_WEBSERVER
+#ifndef FIRMWARE_MINIMAL
 
 void SonoffBridgeAddButton(void) {
   WSContentSend_P(HTTP_TABLE100);
@@ -539,6 +544,7 @@ void SonoffBridgeWebGetArg(void) {
   }
 }
 
+#endif  // not FIRMWARE_MINIMAL
 #endif  // USE_WEBSERVER
 
 /*********************************************************************************************\
@@ -559,12 +565,14 @@ bool Xdrv06(uint32_t function)
         result = DecodeCommand(kSonoffBridgeCommands, SonoffBridgeCommand);
         break;
 #ifdef USE_WEBSERVER
+#ifndef FIRMWARE_MINIMAL
       case FUNC_WEB_ADD_MAIN_BUTTON:
         SonoffBridgeAddButton();
         break;
       case FUNC_WEB_GET_ARG:
         SonoffBridgeWebGetArg();
         break;
+#endif  // not FIRMWARE_MINIMAL
 #endif  // USE_WEBSERVER
       case FUNC_INIT:
         if (Settings->rf_duplicate_time < 10) {

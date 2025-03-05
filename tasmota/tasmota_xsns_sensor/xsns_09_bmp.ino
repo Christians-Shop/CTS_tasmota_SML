@@ -16,7 +16,6 @@
   You should have received a copy of the GNU General Public License
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-
 #ifdef USE_I2C
 #ifdef USE_BMP
 /*********************************************************************************************\
@@ -48,7 +47,7 @@
 
 #define BMP_CMND_RESET       0xB6  // I2C Parameter for RESET to put BMP into reset state
 
-#ifdef ESP32
+#ifdef USE_I2C_BUS2
   #define BMP_MAX_SENSORS    4     // 2 busses
 #else
   #define BMP_MAX_SENSORS    2
@@ -558,8 +557,8 @@ void BmpShow(bool json) {
       if (bmp_count > 1) {
         // BMP280-77
         snprintf_P(name, sizeof(name), PSTR("%s%c%02X"), name, IndexSeparator(), bmp_sensors[bmp_idx].bmp_address);
-#ifdef ESP32
-        if (TasmotaGlobal.i2c_enabled_2) {           // Second bus enabled
+#ifdef USE_I2C_BUS2
+        if (TasmotaGlobal.i2c_enabled[1]) {           // Second bus enabled
           uint8_t bus = bmp_sensors[0].bmp_bus;
           for (uint32_t i = 1; i < bmp_count; i++) {
             if (bus != bmp_sensors[i].bmp_bus) {     // Different busses
@@ -569,7 +568,7 @@ void BmpShow(bool json) {
             }
           }
         }
-#endif
+#endif  // USE_I2C_BUS2
       }
 
       char pressure[33];

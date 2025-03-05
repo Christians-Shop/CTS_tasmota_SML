@@ -41,10 +41,15 @@ lv_widgets = ['obj',
 lv_widgets_no_class = ['span', 'scale_section']      # widgets that don't have a lv_obj class
 # extra widgets
 lv_widgets = lv_widgets + [ 'chart', 'imagebutton', 'led', 'msgbox', 'spinbox', 'spinner', 'keyboard', 'tabview', 'tileview' , 'list',
-                            'animimg', 'calendar', 'menu']
+                            'animimg', 'calendar',
+                            'menu_page', 'menu_cont', 'menu_section', 'menu_separator', 'menu_sidebar_cont',
+                            'menu_main_cont', 'menu_sidebar_header', 'menu_main_header_cont', 'menu']
 
 # add qrcode
 lv_widgets = lv_widgets + [ 'qrcode' ]
+
+# adding ad-hoc colorwheel from LVGL8 to LVGL9
+lv_widgets = lv_widgets + [ 'colorwheel' ]
 
 lv_prefix = ['group', 'style', 'indev', 'display', 'timer', 'anim', 'event', 'span'] + lv_widgets
 
@@ -402,7 +407,10 @@ class type_mapper_class:
     "lv_roller_mode_t": "i",
     "lv_table_cell_ctrl_t": "i",
 
-    "lv_calendar_chinese_t": "c",
+    # "lv_calendar_chinese_t": "c",
+
+    # adding ad-hoc colorwheel from LVGL8 to LVGL9
+    "lv_colorwheel_mode_t": "i",
 
     # arrays
     "constchar * []": "str_arr",
@@ -451,6 +459,7 @@ class type_mapper_class:
     # "char **": "lv_str_arr",           # treat as a simple pointer, decoding needs to be done at Berry level
     "constchar **": "c",      # treat as a simple pointer, decoding needs to be done at Berry level
     "void * []": "c",         # treat as a simple pointer, decoding needs to be done at Berry level
+    "constchar * *": "c",
 
     # callbacks
     "lv_group_focus_cb_t": "lv_group_focus_cb",
@@ -796,6 +805,7 @@ extern "C" {
 
 #include "be_ctypes.h"
 #include "be_mapping.h"
+#include "../src/lv_colorwheel.h"
 """)
 
 for subtype, flv in lv.items():
@@ -911,6 +921,9 @@ BE_EXPORT_VARIABLE extern const bclass be_class_lv_obj;
 
 extern int lvbe_font_create(bvm *vm);
 extern int lvbe_theme_create(bvm *vm);
+
+// adding ad-hoc colorwheel from LVGL8 to LVGL9
+extern const lv_obj_class_t lv_colorwheel_class;
 
 """)
 

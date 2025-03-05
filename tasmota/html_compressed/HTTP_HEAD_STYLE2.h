@@ -1,5 +1,6 @@
 /////////////////////////////////////////////////////////////////////
 // compressed by tools/unishox/compress-html-uncompressed.py
+// input sha256: cff4350b756f01fb7866cbbffa2d169d4fe9eaca6ba45634f368ca1d714cd582
 /////////////////////////////////////////////////////////////////////
 
 const size_t HTTP_HEAD_STYLE2_SIZE = 496;
@@ -15,7 +16,7 @@ const char HTTP_HEAD_STYLE2_COMPRESSED[] PROGMEM = "\x1C\x2E\xAB\x38\xF6\x8E\xCF
                              "\x61\xED\x30\x16\x5D\x1E\x61\x33\x14\x08\x38\x05\x85\xA3\xDC\x08\x33\x0F\x71\xD0"
                              "\xD4\x08\x56\xFF\xA3\xC2\x81\x22\xE0\x20\xCD\x3D\xC7\x4F\x82\x17\x20\x60\x8D\xC7"
                              "\xD3\x1A\x78\x19\x62\x09\xBC\x3C\x79\x9C\xA2\x18\x6C\x3C\x0D\xBF\x8F\x6F\x1E\x67"
-                             "\x38\x86\x1B\x11\xCA\x21\x86\xC3\xC1\xEE\x3A\x0A\x30\x7B\x44\xDF\x0C\x0A\xCC\x81"
+                             "\x30\x86\x1B\x11\xCA\x21\x86\xC3\xC1\xEE\x3A\x0A\x30\x7B\x44\xDF\x0C\x0A\xCC\x81"
                              "\x0B\x61";
 
 #define  HTTP_HEAD_STYLE2       Decompress(HTTP_HEAD_STYLE2_COMPRESSED,HTTP_HEAD_STYLE2_SIZE).c_str()

@@ -61,7 +61,7 @@ const uint8_t SCRIPT_VERS[2] = {5, 3};
 #endif
 #define MAXNVARS MAXVARS-MAXSVARS
 
-#ifdef USE_SML_M
+#if (defined(USE_SML_M) || defined(USE_BINPLUGINS))
 #ifndef NO_USE_SML_SCRIPT_CMD
 // allows several sml cmds from scripts, as well as access to sml registers
 #undef USE_SML_SCRIPT_CMD
@@ -293,9 +293,9 @@ void Script_ticker4_end(void) {
 #endif
 #endif
 
-#if defined(USE_SML_M) && defined (USE_SML_SCRIPT_CMD)
-extern uint8_t sml_options;
-#endif
+//#if defined(USE_SML_M) && defined (USE_SML_SCRIPT_CMD)
+//extern uint8_t sml_options;
+//#endif
 
 #if defined(EEP_SCRIPT_SIZE) && !defined(ESP32)
 
@@ -352,6 +352,7 @@ void alt_eeprom_readBytes(uint32_t adr, uint32_t len, uint8_t *buf) {
 #include <TasmotaSerial.h>
 
 #ifdef TESLA_POWERWALL
+#include "SSLClient/ESP_SSLClient.h"
 #include "include/powerwall.h"
 #endif
 
@@ -531,6 +532,36 @@ struct SCRIPT_SPI {
 #define FLT_MAX 99999999
 #endif
 
+uint32_t SML_SetBaud(uint32_t meter, uint32_t br);
+uint32_t sml_status(uint32_t meter);
+uint32_t SML_Write(int32_t meter, char *hstr);
+uint32_t SML_Read(int32_t meter, char *str, uint32_t slen);
+uint32_t sml_getv(uint32_t sel);
+uint32_t SML_Shift_Num(uint32_t meter, uint32_t shift);
+double SML_GetVal(uint32_t index);
+char *SML_GetSVal(uint32_t index);
+int32_t SML_Set_WStr(uint32_t meter, char *hstr);
+void SML_Decode(uint8_t index);
+uint32_t SML_SetOptions(uint32_t in);
+
+typedef struct {
+  uint32_t (*SML_SetBaud)(uint32_t,uint32_t);
+  uint32_t (*sml_status)(uint32_t);
+  uint32_t (*SML_Write)(int32_t,char*);
+  uint32_t (*SML_Read)(int32_t,char*,uint32_t);
+  uint32_t (*sml_getv)(uint32_t);
+  uint32_t (*SML_Shift_Num)(uint32_t,uint32_t);
+  double (*SML_GetVal)(uint32_t);
+  char * (*SML_GetSVal)(uint32_t);
+  int32_t (*SML_Set_WStr)(uint32_t,char*);
+  void (*SML_Decode)(uint8_t);
+  uint32_t (*SML_SetOptions)(uint32_t);
+} SML_TABLE;
+
+#ifdef USE_SML_M
+SML_TABLE smltab PROGMEM = {&SML_SetBaud,&sml_status,&SML_Write,&SML_Read,&sml_getv,&SML_Shift_Num,&SML_GetVal,&SML_GetSVal,&SML_Set_WStr,&SML_Decode,&SML_SetOptions};
+#endif
+
 #ifdef USE_SCRIPT_ONEWIRE
 #include <OneWire.h>
 #include <DS2480B.h>
@@ -628,7 +659,7 @@ typedef struct {
     uint32_t from_time;
     uint32_t to_time;
 #endif
-#if defined(USE_SML_M) && defined(USE_SML_SCRIPT_CMD) && defined(USE_SCRIPT_SERIAL)
+#if (defined(USE_SML_M) || defined(USE_BINPLUGINS)) && defined(USE_SML_SCRIPT_CMD) && defined(USE_SCRIPT_SERIAL)
     char *hstr;
 #endif
 
@@ -734,11 +765,16 @@ typedef struct {
 #endif
 #endif
 
+#if defined(USE_SML_M) || defined (USE_BINPLUGINS)
+  SML_TABLE *smlptr;
+#endif
+
 } SCRIPT_MEM;
 
 
 SCRIPT_MEM glob_script_mem;
 
+uint32_t Plugin_Query(uint16_t, uint8_t, char *);
 
 void script_setaflg(uint8_t flg) {
   glob_script_mem.tasm_cmd_activ = flg;
@@ -806,6 +842,24 @@ int32_t script_logfile_write(char *path, char *payload, uint32_t size);
 void script_sort_array(TS_FLOAT *array, uint16_t size);
 uint32_t Touch_Status(int32_t sel);
 int32_t play_wave(char *path);
+
+
+#if defined(USE_BINPLUGINS) && !defined(USE_SML_M)
+SML_TABLE *get_sml_table(void) {
+  if (Plugin_Query(53, 0, 0)) {
+    return (SML_TABLE*)Plugin_Query(53, 1, 0);
+  } else {
+    return 0;
+  }
+}
+#endif
+
+#ifdef USE_SML_M
+SML_TABLE *get_sml_table(void) {
+  return glob_script_mem.smlptr;
+}
+#endif
+
 
 void ScriptEverySecond(void) {
 
@@ -915,6 +969,10 @@ char *script;
     }
     uint16_t maxvars = maxsvars + maxnvars;
     //AddLog(LOG_LEVEL_INFO, PSTR("SCR: svar = %d, nvars = %d"), maxsvars, maxnvars);
+
+#ifdef USE_SML_M
+    glob_script_mem.smlptr = &smltab;
+#endif
 
     // scan lines for >DEF
     uint16_t lines = 0;
@@ -2528,19 +2586,23 @@ uint32_t match_vars(char *dvnam, TS_FLOAT **fp, char **sp, uint32_t *ind) {
     if (slen == olen && *cp == dvnam[0]) {
       if (!strncmp(cp, dvnam, olen)) {
         uint16_t index = vtp[count].index;
-        if (vtp[count].bits.is_string == 0) {
-          if (vtp[count].bits.is_filter) {
-            // error
-            return 0;
+        if (vtp[count].bits.global > 0) {
+          if (vtp[count].bits.is_string == 0) {
+            if (vtp[count].bits.is_filter) {
+              // error
+              return 0;
+            } else {
+              *fp = &glob_script_mem.fvars[index];
+              *ind = count;
+              return NUM_RES;
+            }
           } else {
-            *fp = &glob_script_mem.fvars[index];
+            *sp = glob_script_mem.glob_snp + (index * glob_script_mem.max_ssize);
             *ind = count;
-            return NUM_RES;
+            return STR_RES;
           }
         } else {
-          *sp = glob_script_mem.glob_snp + (index * glob_script_mem.max_ssize);
-          *ind = count;
-          return STR_RES;
+          return 0;
         }
       }
     }
@@ -2782,15 +2844,15 @@ char *isvar(char *lp, uint8_t *vtype, struct T_INDEX *tind, TS_FLOAT *fp, char *
     }
 
     const char *term="\n\r ])=+-/*%><!^&|}{";
-    for (count = 0; count < sizeof(vname); count++) {
+    for (count = 0; count < sizeof(vname) - 1; count++) {
         char iob = lp[count];
         if (!iob || strchr(term, iob)) {
-            vname[count] = 0;
             break;
         }
         vname[count] = iob;
         len += 1;
     }
+    vname[count] = 0;
 
     if (!vname[0]) {
       // empty string
@@ -2866,7 +2928,14 @@ char *isvar(char *lp, uint8_t *vtype, struct T_INDEX *tind, TS_FLOAT *fp, char *
       char str_value[SCRIPT_MAX_SBSIZE];
       str_value[0]=0;
       TS_FLOAT fv;
+#if 0
       uint32_t res = JsonParsePath(gv->jo, vname, '#', &fv, str_value, sizeof(str_value));
+#else
+      // replace vars allows for looped queries
+      char vname_buff[64];
+      Replace_Cmd_Vars(lp, sizeof(vname), vname_buff , sizeof(vname_buff));
+      uint32_t res = JsonParsePath(gv->jo, vname_buff, '#', &fv, str_value, sizeof(str_value));
+#endif
       if (!res) {
         goto chknext;
       }
@@ -2881,10 +2950,10 @@ nexit:
       } else {
         // string
         if (!strncmp_XP(str_value, XPSTR("ON"), 2)) {
-          if (fp) *fp = 1;
+          fv = 1;
           goto nexit;
         } else if (!strncmp_XP(str_value, XPSTR("OFF"), 3)) {
-          if (fp) *fp = 0;
+          fv = 0;
           goto nexit;
         } else {
           *vtype = STR_RES;
@@ -2896,6 +2965,7 @@ nexit:
       }
 
 #else
+      // normal json parser
       JsonParserObject *jpo = gv->jo;
       char jvname[64];
       strcpy(jvname, vname);
@@ -3450,6 +3520,10 @@ extern void W8960_SetGain(uint8_t sel, uint16_t value);
           goto nfuncexit;
         }
 #endif //USE_ENERGY_SENSOR
+        if (!strncmp_XP(vname, XPSTR("ethdwn"), 6)) {
+          fvar = TasmotaGlobal.global_state.eth_down;
+          goto exit;
+        }
         break;
       case 'f':
 //#define DEBUG_FS
@@ -4244,9 +4318,11 @@ extern void W8960_SetGain(uint8_t sel, uint16_t value);
 
 #ifdef TESLA_POWERWALL
         if (!strncmp_XP(lp, XPSTR("gpwl("), 5)) {
-          char path[SCRIPT_MAX_SBSIZE];
-          lp = GetStringArgument(lp + 5, OPER_EQU, path, 0);
+          char *path;
+          //lp = GetStringArgument(lp + 5, OPER_EQU, path, 0);
+          lp = GetLongIString(lp + 5, &path);
           fvar = call2pwl(path);
+          free(path);
           goto nfuncexit;
         }
 #endif
@@ -4782,15 +4858,16 @@ extern void W8960_SetGain(uint8_t sel, uint16_t value);
           goto exit;
         }
 #ifdef USE_BINPLUGINS
-char *Plugin_Query(uint8_t, uint8_t);
         if (!strncmp_XP(lp, XPSTR("mo("), 3)) {
           TS_FLOAT fvar1;
+          TS_FLOAT fvar2;
           lp = GetNumericArgument(lp + 3, OPER_EQU, &fvar1, gv);
           SCRIPT_SKIP_SPACES
-          TS_FLOAT fvar2;
           lp = GetNumericArgument(lp, OPER_EQU, &fvar2, gv);
           SCRIPT_SKIP_SPACES
-          char *rbuff = Plugin_Query(fvar1, fvar2);
+          uint16_t par = ((uint8_t)fvar1) << 8 | (uint8_t)fvar2;
+
+          char *rbuff = (char*)Plugin_Query(126, par, 0);
           if (rbuff) {
             if (sp) strlcpy(sp, rbuff, glob_script_mem.max_ssize);
             free (rbuff);
@@ -4905,6 +4982,18 @@ char *Plugin_Query(uint8_t, uint8_t);
           goto exit;
         }
 #endif // USE_I2S_AUDIO
+
+#if defined(USE_BINPLUGINS) && !defined(USE_I2S_AUDIO)
+        if (!strncmp_XP(lp, XPSTR("pl("), 3)) {
+          char path[SCRIPT_MAX_SBSIZE];
+          lp = GetStringArgument(lp + 3, OPER_EQU, path, 0);
+          Plugin_Query(42, 0, path);
+          len++;
+          len = 0;
+          goto exit;
+        }
+#endif // USE_BINPLUGINS
+
         if (!strncmp_XP(lp, XPSTR("pd["), 3)) {
           GetNumericArgument(lp + 3, OPER_EQU, &fvar, gv);
           uint8_t gpiopin = fvar;
@@ -4966,7 +5055,7 @@ char *Plugin_Query(uint8_t, uint8_t);
           goto exit;
         }
 
-#ifdef USE_PLAY_WAVE
+#if defined(USE_PLAY_WAVE) && defined(USE_UFILESYS)
         if (!strncmp_XP(lp, XPSTR("pwav("), 5)) {
           char str[SCRIPT_MAX_SBSIZE];
           lp = GetStringArgument(lp + 5, OPER_EQU, str, 0);
@@ -5300,14 +5389,17 @@ char *Plugin_Query(uint8_t, uint8_t);
 #endif //USE_ANGLE_FUNC
 
 
-#if defined(USE_SML_M) && defined (USE_SML_SCRIPT_CMD)
-uint32_t sml_status(uint32_t meter);
-extern char *SML_GetSVal(uint32_t index);
+#if (defined(USE_SML_M) || defined(USE_BINPLUGINS)) && defined(USE_SML_SCRIPT_CMD)
 
         if (!strncmp_XP(lp, XPSTR("sml["), 4)) {
           lp = GetNumericArgument(lp + 4, OPER_EQU, &fvar, gv);
           SCRIPT_SKIP_SPACES
-          fvar = SML_GetVal(fvar);
+          SML_TABLE *smlp = get_sml_table();
+          if (smlp) {
+            fvar = smlp->SML_GetVal(fvar);
+          } else {
+            fvar = 0;
+          }
           goto nfuncexit;
         }
         if (!strncmp_XP(lp, XPSTR("smls["), 5)) {
@@ -5315,16 +5407,19 @@ extern char *SML_GetSVal(uint32_t index);
           SCRIPT_SKIP_SPACES
           lp++;
           len = 0;
-          if (fvar > 0) {
-            if (sp) strlcpy(sp, SML_GetSVal(fvar), glob_script_mem.max_ssize);
-          } else {
-            char sbuff[SCRIPT_MAX_SBSIZE];
-            fvar = fabs(fvar);
-            if (fvar < 1) {
-              fvar = 1;
+          SML_TABLE *smlp = get_sml_table();
+          if (smlp) {
+            if (fvar > 0) {
+              if (sp) strlcpy(sp, smlp->SML_GetSVal(fvar), glob_script_mem.max_ssize);
+            } else {
+              char sbuff[SCRIPT_MAX_SBSIZE];
+              fvar = fabs(fvar);
+              if (fvar < 1) {
+                fvar = 1;
+              }
+              dtostrfd(smlp->SML_GetVal(fvar), glob_script_mem.script_dprec, sbuff);
+              if (sp) strlcpy(sp, sbuff, glob_script_mem.max_ssize);
             }
-            dtostrfd(SML_GetVal(fvar), glob_script_mem.script_dprec, sbuff);
-            if (sp) strlcpy(sp, sbuff, glob_script_mem.max_ssize);
           }
           goto strexit;
         }
@@ -5335,54 +5430,63 @@ extern char *SML_GetSVal(uint32_t index);
           TS_FLOAT fvar2;
           lp = GetNumericArgument(lp, OPER_EQU, &fvar2, gv);
           SCRIPT_SKIP_SPACES
-          if (fvar2 == 0) {
-            TS_FLOAT fvar3;
-            lp = GetNumericArgument(lp, OPER_EQU, &fvar3, gv);
-            fvar = SML_SetBaud(fvar1, fvar3);
-          } else if (fvar2 == 1) {
-            char str[SCRIPT_MAX_SBSIZE];
-            lp = GetStringArgument(lp, OPER_EQU, str, 0);
-            fvar = SML_Write(fvar1, str);
-          } else if (fvar2 == 2) {
-            char str[SCRIPT_MAX_SBSIZE];
-            str[0] = 0;
-            fvar = SML_Read(fvar1, str, SCRIPT_MAX_SBSIZE);
-            if (sp) strlcpy(sp, str, glob_script_mem.max_ssize);
-            lp++;
-            len = 0;
-            goto strexit;
-          } else if (fvar2 == 3) {
-            uint8_t vtype;
-            struct T_INDEX ind;
-            lp = isvar(lp, &vtype, &ind, 0, 0, 0);
-            if (vtype != VAR_NV) {
-              // found variable as result
-              if (vtype == NUM_RES || (vtype & STYPE) == 0) {
-                // numeric result
-                fvar = -1;
+          SML_TABLE *smlp = get_sml_table();
+          if (smlp) {
+            if (fvar2 == 0) {
+              TS_FLOAT fvar3;
+              lp = GetNumericArgument(lp, OPER_EQU, &fvar3, gv);
+              fvar = smlp->SML_SetBaud(fvar1, fvar3);
+            } else if (fvar2 == 1) {
+              char str[SCRIPT_MAX_SBSIZE];
+              lp = GetStringArgument(lp, OPER_EQU, str, 0);
+              fvar = smlp->SML_Write(fvar1, str);
+            } else if (fvar2 == 2) {
+              char str[SCRIPT_MAX_SBSIZE];
+              str[0] = 0;
+              fvar = smlp->SML_Read(fvar1, str, SCRIPT_MAX_SBSIZE);
+              if (sp) strlcpy(sp, str, glob_script_mem.max_ssize);
+              lp++;
+              len = 0;
+              goto strexit;
+            } else if (fvar2 == 3) {
+              uint8_t vtype;
+              struct T_INDEX ind;
+              lp = isvar(lp, &vtype, &ind, 0, 0, 0);
+              if (vtype != VAR_NV) {
+                // found variable as result
+                if (vtype == NUM_RES || (vtype & STYPE) == 0) {
+                  // numeric result
+                  fvar = -1;
+                } else {
+                  // string result
+                  uint16_t sindex = glob_script_mem.type[ind.index].index;
+                  char *cp = glob_script_mem.glob_snp + (sindex * glob_script_mem.max_ssize);
+                  fvar = smlp->SML_Set_WStr(fvar1, cp);
+                }
               } else {
-                // string result
-                uint16_t sindex = glob_script_mem.type[ind.index].index;
-                char *cp = glob_script_mem.glob_snp + (sindex * glob_script_mem.max_ssize);
-                fvar = SML_Set_WStr(fvar1, cp);
+                fvar = -99;
               }
             } else {
-              fvar = -99;
+              fvar = smlp->sml_status(fvar1);
             }
-          } else {
-            fvar = sml_status(fvar1);
           }
           goto nfuncexit;
         }
         if (!strncmp_XP(vname, XPSTR("smlj"), 4)) {
-          fvar = sml_options;
+          SML_TABLE *smlp = get_sml_table();
+          if (smlp) {
+            fvar = smlp->SML_SetOptions(0); // sml_options;
+          }
           tind->index = SML_JSON_ENABLE;
           goto exit_settable;
         }
         if (!strncmp_XP(lp, XPSTR("smld("), 5)) {
           lp = GetNumericArgument(lp + 5, OPER_EQU, &fvar, gv);
           if (fvar < 1) fvar = 1;
-          SML_Decode(fvar - 1);
+          SML_TABLE *smlp = get_sml_table();
+          if (smlp) {
+            smlp->SML_Decode(fvar - 1);
+          }
           goto nfuncexit;
         }
         if (!strncmp_XP(lp, XPSTR("smls("), 5)) {
@@ -5390,12 +5494,18 @@ extern char *SML_GetSVal(uint32_t index);
           lp = GetNumericArgument(lp + 5, OPER_EQU, &meter, gv);
           if (meter < 1) meter = 1;
           lp = GetNumericArgument(lp, OPER_EQU, &fvar, gv);
-          SML_Shift_Num(meter - 1, fvar);
+          SML_TABLE *smlp = get_sml_table();
+          if (smlp) {
+            smlp->SML_Shift_Num(meter - 1, fvar);
+          }
           goto nfuncexit;
         }
         if (!strncmp_XP(lp, XPSTR("smlv["), 5)) {
           lp = GetNumericArgument(lp + 5, OPER_EQU, &fvar, gv);
-          fvar = sml_getv(fvar);
+          SML_TABLE *smlp = get_sml_table();
+          if (smlp) {
+            fvar = smlp->sml_getv(fvar);
+          }
           goto nfuncexit;
         }
 #endif //USE_SML_M
@@ -6272,7 +6382,7 @@ void tmod_directModeOutput(uint32_t pin);
         if (!strncmp_XP(lp, XPSTR("wso("), 4)) {
           TS_FLOAT port;
           lp = GetNumericArgument(lp + 4, OPER_EQU, &port, gv);
-          if (TasmotaGlobal.global_state.wifi_down) {
+          if (TasmotaGlobal.global_state.network_down) {
             fvar = - 2;
           } else {
             if (glob_script_mem.tcp_server) {
@@ -6645,7 +6755,7 @@ char *getop(char *lp, uint8_t *operand) {
 
 
 
-#ifdef USE_PLAY_WAVE
+#if defined(USE_PLAY_WAVE) && defined(USE_UFILESYS)
 
 #ifdef ESP8266
 #include <i2s.h>
@@ -7040,7 +7150,6 @@ char *GetLongIString(char *lp, char **dstr) {
     lp = GetStringArgument(lp, OPER_EQU, *dstr, 0);
   } else {
     lp++;
-
     char *cp;
 #if 0
     cp = strchr(lp, '"');
@@ -7049,7 +7158,7 @@ char *GetLongIString(char *lp, char **dstr) {
       *dstr = (char*)calloc(slen + 2, 1);
       if (!*dstr) return lp;
       memmove(*dstr, lp , slen);
-#else   
+#else
     char *llp = lp;
  loop:
     cp = strchr(lp, '"');
@@ -8480,9 +8589,13 @@ getnext:
                             }
                             glob_script_mem.cmdbuffer_size = *dfvar;
                             break;
-#if defined(USE_SML_M) && defined (USE_SML_SCRIPT_CMD)
+#if (defined(USE_SML_M) || defined(USE_BINPLUGINS)) && defined(USE_SML_SCRIPT_CMD)
                           case SML_JSON_ENABLE:
-                            sml_options = *dfvar;
+                            //sml_options = *dfvar;
+                            SML_TABLE *smlp = get_sml_table();
+                            if (smlp) {
+                              fvar = smlp->SML_SetOptions(0x100 | (uint8_t) *dfvar); // sml_options;
+                            }
                             break;
 #endif
                         }
@@ -10172,7 +10285,7 @@ uint32_t options = 0;
 #ifdef USE_SCRIPT_I2C
   options |= 0x00400000;
 #endif
-#ifdef USE_DSIPLAY_DUMP
+#ifdef USE_DISPLAY_DUMP
   options |= 0x00800000;
 #endif
 #ifdef USE_SCRIPT_SERIAL
@@ -12935,21 +13048,6 @@ int32_t call2pwl(const char *url) {
   String result = powerwall.GetRequest(String(url), cookie);
   //AddLog(LOG_LEVEL_INFO, PSTR("PWL: result: %s"), result.c_str());
 
-  // shrink data size because it exceeds json parser maxsize
-  result.replace("communication_time", "ct");
-  result.replace("instant", "i");
-  result.replace("apparent", "a");
-  result.replace("reactive", "r");
-
-// custom replace
-#ifdef TESLA_POWERWALL_CTS1
-  result.replace(TESLA_POWERWALL_CTS1, "PW_CTS1");
-#endif
-
-#ifdef TESLA_POWERWALL_CTS2
-  result.replace(TESLA_POWERWALL_CTS2, "PW_CTS2");
-#endif
-
   if (result.length()>4095) {
     AddLog(LOG_LEVEL_INFO, PSTR("PWL: result overflow: %d"), result.length());
   }
@@ -13075,7 +13173,14 @@ uint32_t script_i2c(uint8_t sel, uint16_t val, uint32_t val1) {
       glob_script_mem.script_i2c_addr = val;
 #ifdef ESP32
       if (val1 == 0) glob_script_mem.script_i2c_wire = &Wire;
-      else glob_script_mem.script_i2c_wire = &Wire1;
+      else {
+#if defined(USE_I2C_BUS2)
+        glob_script_mem.script_i2c_wire = &Wire1;
+#else
+        glob_script_mem.script_i2c_wire = &Wire;
+#endif
+      }
+
 #else
       glob_script_mem.script_i2c_wire = &Wire;
 #endif
@@ -13122,15 +13227,15 @@ uint32_t script_i2c(uint8_t sel, uint16_t val, uint32_t val1) {
       glob_script_mem.script_i2c_wire->endTransmission();
       break;
     case 14:
- #ifdef ESP32
+#if defined(ESP32) && defined(USE_I2C_BUS2)
       Wire1.end();
       Wire1.begin(val & 0x7f, val1);
       glob_script_mem.script_i2c_wire = &Wire1;
-      TasmotaGlobal.i2c_enabled_2 = true;
+      TasmotaGlobal.i2c_enabled[1] = true;
       if (val & 128) {
         XsnsCall(FUNC_INIT);
       }
- #endif     
+#endif     
       break;
   }
   return rval;
@@ -13764,7 +13869,7 @@ bool Xdrv10(uint32_t function) {
         Script_Check_Hue(0);
 #endif //USE_SCRIPT_HUE
 
-#if defined(USE_SML_M) && defined(USE_SML_SCRIPT_CMD) && defined(USE_SCRIPT_SERIAL)
+#if (defined(USE_SML_M) || defined(USE_BINPLUGINS)) && defined(USE_SML_SCRIPT_CMD) && defined(USE_SCRIPT_SERIAL)
       glob_script_mem.hstr = 0;
 #endif
       }

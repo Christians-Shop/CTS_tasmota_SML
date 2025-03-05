@@ -269,6 +269,12 @@ bool disp_subscribed = false;
 
 /*********************************************************************************************/
 
+uint32_t DisplayDevices(void) {
+  return (disp_device) ? 1 : 0;
+}
+
+/*********************************************************************************************/
+
 void DisplayClear(void) {
   if (renderer) {
     renderer->fillScreen(bg_color);
@@ -1846,57 +1852,53 @@ void DisplayLocalSensor(void)
 \*********************************************************************************************/
 
 void DisplayInitDriver(void) {
+  uint32_t display_model = Settings->display_model;
+  Settings->display_model = 0;                     // Test if any display_model is available
   XdspCall(FUNC_DISPLAY_INIT_DRIVER);
+  if (Settings->display_model && display_model) {  // If any model found keep using user configured one for backward compatibility
+    Settings->display_model = display_model;
+  }
+  if (!Settings->display_model) { return; }
 
-//  AddLog(LOG_LEVEL_DEBUG, PSTR(D_LOG_DEBUG "Display model %d"), Settings->display_model);
+//  AddLog(LOG_LEVEL_DEBUG_MORE, PSTR("DSP: Model %d"), Settings->display_model);
 
-  if (Settings->display_model) {
-//    ApplyDisplayDimmer();  // Not allowed here. Way too early in init sequence. Global power state has not been set at this point in time
+//  ApplyDisplayDimmer();  // Not allowed here. Way too early in init sequence. Global power state has not been set at this point in time
 
 #ifdef USE_MULTI_DISPLAY
-    Set_display(0);
+  Set_display(0);
 #endif // USE_MULTI_DISPLAY
 
-    if (renderer) {
-      renderer->setTextFont(Settings->display_font);
-      renderer->setTextSize(Settings->display_size);
-      // force opaque mode
-      renderer->setDrawMode(0);
+  if (renderer) {
+    renderer->setTextFont(Settings->display_font);
+    renderer->setTextSize(Settings->display_size);
+    // force opaque mode
+    renderer->setDrawMode(0);
 
-      for (uint32_t cnt = 0; cnt < (MAX_INDEXCOLORS - PREDEF_INDEXCOLORS); cnt++) {
-        index_colors[cnt] = 0;
-      }
+    for (uint32_t cnt = 0; cnt < (MAX_INDEXCOLORS - PREDEF_INDEXCOLORS); cnt++) {
+      index_colors[cnt] = 0;
     }
+  }
 
 #ifdef USE_DT_VARS
-    free_dt_vars();
+  free_dt_vars();
 #endif
 
 #ifdef USE_UFILESYS
-    Display_Text_From_File(DISP_BATCH_FILE);
+  Display_Text_From_File(DISP_BATCH_FILE);
 #endif
 
 #ifdef USE_GRAPH
-    for (uint8_t count = 0; count < NUM_GRAPHS; count++) { graph[count] = 0; }
+  for (uint8_t count = 0; count < NUM_GRAPHS; count++) { graph[count] = 0; }
 #endif
 
-    UpdateDevicesPresent(1);
-    if (!PinUsed(GPIO_BACKLIGHT)) {
-      if ((LT_PWM1 == TasmotaGlobal.light_type) &&  // Single PWM light channel
-          ((4 == Settings->display_model) ||        // ILI9341 legacy
-           (17 == Settings->display_model))         // Universal
-         ) {
-        UpdateDevicesPresent(-1);                   // Assume PWM channel is used for backlight
-      }
-    }
-    disp_device = TasmotaGlobal.devices_present;
+  UpdateDevicesPresent(1);
+  disp_device = TasmotaGlobal.devices_present;
 
 #ifndef USE_DISPLAY_MODES1TO5
-    Settings->display_mode = 0;
+  Settings->display_mode = 0;
 #else
-    DisplayLogBufferInit();
+  DisplayLogBufferInit();
 #endif  // USE_DISPLAY_MODES1TO5
-  }
 }
 
 void DisplaySetPower(void) {
@@ -2169,7 +2171,7 @@ void CmndDisplayText(void) {
 
 void CmndDisplayClear(void) {
   DisplayClear();
-  ResponseCmndChar(XdrvMailbox.data);
+  ResponseCmndDone();
 }
 
 void CmndDisplayNumber(void) {
@@ -2442,6 +2444,28 @@ void Draw_RGB_Bitmap(char *file, uint16_t xp, uint16_t yp, uint8_t scale, bool i
 #ifdef ESP32
 #ifdef JPEG_PICTS
 #define JPG_DEFSIZE 150000
+void Draw_jpeg(uint8_t *mem, uint16_t jpgsize, uint16_t xp, uint16_t yp, uint8_t scale) {
+  if (mem[0] == 0xff && mem[1] == 0xd8) {
+    uint16_t xsize;
+    uint16_t ysize;
+    get_jpeg_size(mem, jpgsize, &xsize, &ysize);
+    //AddLog(LOG_LEVEL_INFO, PSTR("Pict size %d - %d - %d"), xsize, ysize, jpgsize);
+    scale &= 3;
+    uint8_t fac = 1 << scale;
+    xsize /= fac;
+    ysize /= fac;
+    renderer->setAddrWindow(xp, yp, xp + xsize, yp + ysize);
+    uint8_t *rgbmem = (uint8_t *)special_malloc(xsize * ysize * 2);
+    if (rgbmem) {
+      //jpg2rgb565(mem, jpgsize, rgbmem, JPG_SCALE_NONE);
+      jpg2rgb565(mem, jpgsize, rgbmem, (jpg_scale_t)scale);
+      renderer->pushColors((uint16_t*)rgbmem, xsize * ysize, true);
+      free(rgbmem);
+    }
+    renderer->setAddrWindow(0, 0, 0, 0);
+  }
+}
+
 void Draw_JPG_from_URL(char *url, uint16_t xp, uint16_t yp, uint8_t scale) {
   uint8_t *mem = 0;
   WiFiClient http_client;
@@ -2483,28 +2507,6 @@ void Draw_JPG_from_URL(char *url, uint16_t xp, uint16_t yp, uint8_t scale) {
     Draw_jpeg(mem, jpgsize, xp, yp, scale);
   }
   if (mem) free(mem);
-}
-
-void Draw_jpeg(uint8_t *mem, uint16_t jpgsize, uint16_t xp, uint16_t yp, uint8_t scale) {
-  if (mem[0] == 0xff && mem[1] == 0xd8) {
-    uint16_t xsize;
-    uint16_t ysize;
-    get_jpeg_size(mem, jpgsize, &xsize, &ysize);
-    //AddLog(LOG_LEVEL_INFO, PSTR("Pict size %d - %d - %d"), xsize, ysize, jpgsize);
-    scale &= 3;
-    uint8_t fac = 1 << scale;
-    xsize /= fac;
-    ysize /= fac;
-    renderer->setAddrWindow(xp, yp, xp + xsize, yp + ysize);
-    uint8_t *rgbmem = (uint8_t *)special_malloc(xsize * ysize * 2);
-    if (rgbmem) {
-      //jpg2rgb565(mem, jpgsize, rgbmem, JPG_SCALE_NONE);
-      jpg2rgb565(mem, jpgsize, rgbmem, (jpg_scale_t)scale);
-      renderer->pushColors((uint16_t*)rgbmem, xsize * ysize, true);
-      free(rgbmem);
-    }
-    renderer->setAddrWindow(0, 0, 0, 0);
-  }
 }
 #endif // JPEG_PICTS
 #endif // ESP32

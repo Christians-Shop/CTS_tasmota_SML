@@ -80,12 +80,13 @@ typedef struct {
   float current[ENERGY_MAX_PHASES];             // 123.123 A
   float active_power[ENERGY_MAX_PHASES];        // 123.1 W
   float apparent_power[ENERGY_MAX_PHASES];      // 123.1 VA
-  float reactive_power[ENERGY_MAX_PHASES];      // 123.1 VAr
+  float reactive_power[ENERGY_MAX_PHASES];      // 123.1 var
   float power_factor[ENERGY_MAX_PHASES];        // 0.12
   float frequency[ENERGY_MAX_PHASES];           // 123.1 Hz
   float import_active[ENERGY_MAX_PHASES];       // 123.123 kWh
   float export_active[ENERGY_MAX_PHASES];       // 123.123 kWh
   float start_energy[ENERGY_MAX_PHASES];        // 12345.12345 kWh total previous
+  float start_export_energy[ENERGY_MAX_PHASES]; // 12345.12345 kWh total previous
   float daily[ENERGY_MAX_PHASES];               // 123.123 kWh
   float total[ENERGY_MAX_PHASES];               // 12345.12345 kWh total energy
   float daily_sum;                              // 123.123 kWh
@@ -277,7 +278,9 @@ void EnergyUpdateToday(void) {
       int32_t delta = Energy->kWhtoday_delta[i] / 1000;
       delta_sum_balanced += delta;
       Energy->kWhtoday_delta[i] -= (delta * 1000);
-      Energy->kWhtoday[i] += delta;
+      if (!Settings->flag6.no_export_energy_today || (delta > 0)) {  // SetOption162 - (Energy) Do not add export energy to energy today (1)
+        Energy->kWhtoday[i] += delta;
+      }
       if (delta < 0) {     // Export energy
         Energy->kWhtoday_export[i] += (delta *-1);
         if (Energy->kWhtoday_export[i] > 100) {
@@ -357,19 +360,24 @@ void EnergyUpdateTotal(void) {
 
     if (0 == Energy->start_energy[i] || (Energy->import_active[i] < Energy->start_energy[i])) {
       Energy->start_energy[i] = Energy->import_active[i];            // Init after restart and handle roll-over if any
+      Energy->start_export_energy[i] = (float)(RtcSettings.energy_kWhexport_ph[i]) / 1000;  // Init after restart
     }
     else if (Energy->import_active[i] != Energy->start_energy[i]) {
-      Energy->kWhtoday[i] = (int32_t)((Energy->import_active[i] - Energy->start_energy[i]) * 100000);
+      if (Energy->local_energy_active_export && (Energy->active_power[i] < 0)) {
+        RtcSettings.energy_kWhexport_ph[i] = (int32_t)((Energy->start_export_energy[i] + Energy->import_active[i] - Energy->start_energy[i]) * 1000);
+      } else {
+        Energy->kWhtoday[i] = (int32_t)((Energy->import_active[i] - Energy->start_energy[i]) * 100000);
+      }
     }
 
-    if ((Energy->total[i] < (Energy->import_active[i] - 0.01f)) &&   // We subtract a little offset of 10Wh to avoid continuous updates
-        Settings->flag3.hardware_energy_total) {                   // SetOption72 - Enable hardware energy total counter as reference (#6561)
+    if (Settings->flag3.hardware_energy_total && // SetOption72 - Enable hardware energy total counter as reference (#6561)
+        fabs(Energy->total[i] - Energy->import_active[i]) > 0.01f) {   // to avoid continuous updates, check for difference of min 10Wh
       // The following calculation allows total usage (Energy->import_active[i]) up to +/-2147483.647 kWh
       RtcSettings.energy_kWhtotal_ph[i] = (int32_t)((Energy->import_active[i] * 1000) - ((Energy->kWhtoday_offset[i] + Energy->kWhtoday[i]) / 100));
       Settings->energy_kWhtotal_ph[i] = RtcSettings.energy_kWhtotal_ph[i];
       Energy->total[i] = Energy->import_active[i];
       Settings->energy_kWhtotal_time = (!Energy->kWhtoday_offset[i]) ? LocalTime() : Midnight();
-  //    AddLog(LOG_LEVEL_DEBUG, PSTR("NRG: Energy Total updated with hardware value"));
+  //    AddLog(LOG_LEVEL_DEBUG, PSTR("NRG: EnergyTotal updated with hardware value"));
     }
   }
 
@@ -401,7 +409,7 @@ void Energy200ms(void) {
       }
 
       bool midnight = (LocalTime() == Midnight());
-      if (midnight || (RtcTime.day_of_year > Settings->energy_kWhdoy)) {
+      if ((midnight || RtcTime.day_of_year != Settings->energy_kWhdoy) && TasmotaGlobal.uptime > 10) {
         Energy->kWhtoday_offset_init = true;
         Settings->energy_kWhdoy = RtcTime.day_of_year;
 
@@ -779,13 +787,18 @@ void CmndEnergyToday(void) {
 }
 
 void CmndEnergyExportActive(void) {
-  if (Energy->local_energy_active_export) {
-    // EnergyExportActive1 24
-    // EnergyExportActive1 24,1650111291
-    uint32_t values[2] = { 0 };
-    uint32_t params = ParseParameters(2, values);
+  // EnergyExportActive 0           - Disable local energy_active_export support
+  // EnergyExportActive 1           - Enable local energy_active_export support
+  uint32_t values[2] = { 0 };
+  uint32_t params = ParseParameters(2, values);
 
-    if ((XdrvMailbox.index > 0) && (XdrvMailbox.index <= Energy->phase_count) && (params > 0)) {
+  if ((XdrvMailbox.index > 0) && (XdrvMailbox.index <= Energy->phase_count) && (params > 0)) {
+    if (!XdrvMailbox.usridx) {
+      Energy->local_energy_active_export = values[0] &1;
+    }
+    else if (Energy->local_energy_active_export) {
+      // EnergyExportActive1 24
+      // EnergyExportActive1 24,1650111291
       uint32_t phase = XdrvMailbox.index -1;
       // Reset Energy Export Active
       RtcSettings.energy_kWhexport_ph[phase] = (int32_t)values[0];
@@ -794,7 +807,12 @@ void CmndEnergyExportActive(void) {
         Settings->energy_kWhtotal_time = values[1];
       }
     }
+  }
+  if (Energy->local_energy_active_export) {
     ResponseCmndEnergyTotalYesterdayToday();
+  } else {
+    Energy->export_active[0] = NAN;  // Disable display of unused export_active
+    ResponseCmndStateText(Energy->local_energy_active_export);
   }
 }
 
@@ -1456,15 +1474,16 @@ void EnergyShow(bool json) {
       WSContentSend_PD(HTTP_SNS_CURRENT, WebEnergyFmt(Energy->current, Settings->flag2.current_resolution));
     }
     WSContentSend_PD(HTTP_SNS_POWER, WebEnergyFmt(Energy->active_power, Settings->flag2.wattage_resolution));
+//    if (abs(negative_phases) != Energy->phase_count) {  // Provide total power if producing power (PV) and multi phase
+    if (Energy->phase_count > 1) {  // Provide total power if multi phase
+       WSContentSend_PD(HTTP_SNS_POWER_TOTAL, WebEnergyFmt(Energy->active_power, Settings->flag2.wattage_resolution, 3));
+    }
     if (!Energy->type_dc) {
       if (Energy->current_available && Energy->voltage_available) {
         WSContentSend_PD(HTTP_SNS_POWERUSAGE_APPARENT, WebEnergyFmt(apparent_power, Settings->flag2.wattage_resolution));
         WSContentSend_PD(HTTP_SNS_POWERUSAGE_REACTIVE, WebEnergyFmt(reactive_power, Settings->flag2.wattage_resolution));
         WSContentSend_PD(HTTP_SNS_POWER_FACTOR, WebEnergyFmt(power_factor, 2));
       }
-    }
-    if (abs(negative_phases) != Energy->phase_count) {  // Provide total power if producing power (PV) and multi phase
-       WSContentSend_PD(HTTP_SNS_POWER_TOTAL, WebEnergyFmt(Energy->active_power, Settings->flag2.wattage_resolution, 3));
     }
     WSContentSend_PD(HTTP_SNS_ENERGY_TODAY, WebEnergyFmt(Energy->daily, Settings->flag2.energy_resolution, 2));
     WSContentSend_PD(HTTP_SNS_ENERGY_YESTERDAY, WebEnergyFmt(energy_yesterday_ph, Settings->flag2.energy_resolution, 2));
@@ -1498,9 +1517,10 @@ bool Xdrv03(uint32_t function)
       case FUNC_SLEEP_LOOP:
         XnrgCall(FUNC_LOOP);
         break;
+      case FUNC_EVERY_100_MSECOND:
       case FUNC_EVERY_250_MSECOND:
         if (TasmotaGlobal.uptime > 4) {
-          XnrgCall(FUNC_EVERY_250_MSECOND);
+          XnrgCall(function);
         }
         break;
       case FUNC_EVERY_SECOND:
