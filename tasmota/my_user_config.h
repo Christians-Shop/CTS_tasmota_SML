@@ -53,11 +53,11 @@
 #define MODULE                 USER_MODULE      // [Module] Select default module from tasmota_template.h
 #ifdef ESP8266
 #define FALLBACK_MODULE        SONOFF_BASIC      // [Module2] Select default module on fast reboot where USER_MODULE is user template
-#define USER_TEMPLATE "{\"Name\":\"CTS SMI 32\",\"GPIO\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"FLAG\":0,\"BASE\":18}"  // [Template] Set JSON template
+#define USER_TEMPLATE "{\"Name\":\"Christians Technikshop SMI\",\"GPIO\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"FLAG\":0,\"BASE\":18}"  // [Template] Set JSON template
 #endif  // ESP8266
 #ifdef ESP32
 #define FALLBACK_MODULE        WEMOS             // [Module2] Select default module on fast reboot where USER_MODULE is user template
-#define USER_TEMPLATE "{\"NAME\":\"CTS SMI 32\",\"GPIO\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"FLAG\":0,\"BASE\":1}"  // [Template] Set JSON template
+#define USER_TEMPLATE "{\"NAME\":\"Christians Technikshop SMI 32\",\"GPIO\":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],\"FLAG\":0,\"BASE\":1}"  // [Template] Set JSON template
 #endif  // ESP32
 
 #define SAVE_DATA              1                 // [SaveData] Save changed parameters to Flash (0 = disable, 1 - 3600 seconds)
@@ -179,7 +179,7 @@
 // -- HTTP ----------------------------------------
 #define WEB_SERVER             2                 // [WebServer] Web server (0 = Off, 1 = Start as User, 2 = Start as Admin)
 #define WEB_PASSWORD           ""                // [WebPassword] Web server Admin mode Password for WEB_USERNAME (empty string = Disable)
-#define FRIENDLY_NAME          "Christians Technikshop WiFi IR SMI"         // [FriendlyName] Friendlyname up to 32 characters used by webpages and Alexa
+#define FRIENDLY_NAME          "WiFi IR SmartMeter Interface"         // [FriendlyName] Friendlyname up to 32 characters used by webpages and Alexa
 #define EMULATION              EMUL_NONE         // [Emulation] Select Belkin WeMo (single relay/light) or Hue Bridge emulation (multi relay/light) (EMUL_NONE, EMUL_WEMO or EMUL_HUE)
 #define EMULATION_HUE_1ST_GEN  false             // [Emulation] Force SetOption109 1 - if you only have Echo Dot 2nd gen devices
 //#define USE_CORS                                 // [Cors] Enable CORS - Be aware that this feature is unsecure ATM (https://github.com/arendst/Tasmota/issues/6767)
