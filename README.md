@@ -7,16 +7,18 @@ Dieses Repository enthält eine speziell angepasste Version der Tasmota Firmware
 ## Produktinformationen
 
 - **Produktname**: WiFi IR Smart Meter Interface – Moderne Schnittstelle für Smart-Home-Systeme
-- **Produktlink**: [Hier erhältlich](https://www.christians-shop.de/wifi-ir-smart-meter-interface-auswahl)
+- **Produktlink**:  [WiFi Smartmeter Interface (ESP8266)](https://www.christians-shop.de/wifi-ir-smart-meter-interface-auswahl)
+                    [WiFi Smartmeter Interface (ESP32C3)](https://www.christians-shop.de/)
 - **Firmware-Version**: Entwicklungs Branch
 - **Basierend auf Tasmota-Version**: [Tasmota v14.5.0 Ruth](https://github.com/arendst/Tasmota/releases/tag/v14.5.0)
-- **Hardware-Basis**: ESP8266EX
+- **Hardware-Basis**:   ESP8266EX
+                        ESP32C3
 
 ## Anpassungen und Funktionen
 
-- **SML-Erweiterung**: Wir haben das SML-Protokoll in die Firmware integriert, um die Kommunikation mit Ihrem Smart Meter zu ermöglichen.
+- **SML-Erweiterung**: Wir haben das SML-Protokoll in die Firmware integriert `user_config_override.h`, um die Kommunikation mit Ihrem Smart Meter zu ermöglichen.
 
-- **Update-Server**: In der Datei `platformio_tasmota_env.ini` haben wir unseren Update-Server hinzugefügt, um Ihnen einfache Produktaktualisierungen zu ermöglichen.
+- **Update-Server**: In der Datei `platformio_tasmota_env.ini` und `platformio_tasmota_env32.ini` haben wir unseren Update-Server hinzugefügt, um Ihnen einfache Produktaktualisierungen zu ermöglichen.
 
 - **User-Modul**: Die `my_user_config.h` wurde angepasst, um ein benutzerdefiniertes Modul zu integrieren, das speziell auf die Anforderungen unseres Produkts zugeschnitten ist.
 
