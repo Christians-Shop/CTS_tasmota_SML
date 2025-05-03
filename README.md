@@ -7,12 +7,10 @@ Dieses Repository enthält eine speziell angepasste Version der Tasmota Firmware
 ## Produktinformationen
 
 - **Produktname**: WiFi IR Smart Meter Interface – Moderne Schnittstelle für Smart-Home-Systeme
-- **Produktlink**:  [WiFi Smartmeter Interface (ESP8266)](https://www.christians-shop.de/wifi-ir-smart-meter-interface-auswahl)
-                    [WiFi Smartmeter Interface (ESP32C3)](https://www.christians-shop.de/)
+- **Produktlink**:  [WiFi Smartmeter Interface (ESP8266)](https://www.christians-shop.de/wifi-ir-smart-meter-interface-auswahl), [WiFi Smartmeter Interface (ESP32C3)](https://www.christians-shop.de/)
 - **Firmware-Version**: Entwicklungs Branch
 - **Basierend auf Tasmota-Version**: [Tasmota v14.5.0 Ruth](https://github.com/arendst/Tasmota/releases/tag/v14.5.0)
-- **Hardware-Basis**:   ESP8266EX
-                        ESP32C3
+- **Hardware-Basis**:   ESP8266EX, ESP32C3
 
 ## Anpassungen und Funktionen
 
