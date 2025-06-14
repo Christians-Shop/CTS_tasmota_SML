@@ -18,7 +18,7 @@ Dieses Repository enthält eine speziell angepasste Version der Tasmota Firmware
 
 - **Update-Server**: In der Datei `platformio_tasmota_env.ini` und `platformio_tasmota_env32.ini` haben wir unseren Update-Server hinzugefügt, um Ihnen einfache Produktaktualisierungen zu ermöglichen.
 
-- **User-Modul**: Die `my_user_config.h` wurde angepasst, um ein benutzerdefiniertes Modul zu integrieren, das speziell auf die Anforderungen unseres Produkts zugeschnitten ist.
+- **User-Modul**: Die `my_user_config.h` wurde angepasst, um ein benutzerdefiniertes Modul zu integrieren, das speziell auf die Anforderungen unseres Produkts zugeschnitten ist sowie die TELE_PERIODvon 300 auf 10 Sekunden angepasst.
 
 - **GUI-Anpassungen**: Wir haben Änderungen an den Namensparametern vorgenommen, damit die Software in der Geräte-GUI korrekt erkannt wird und eine benutzerfreundliche Erfahrung gewährleistet ist.
 
