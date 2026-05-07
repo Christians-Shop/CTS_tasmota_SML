@@ -58,3 +58,4 @@ lib/libesp32/berry/berry
 ## Python virtual environments for Platformio ##
 venv
 .venv
+.claude/settings.json
